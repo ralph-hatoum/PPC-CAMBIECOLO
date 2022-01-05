@@ -220,5 +220,8 @@ def accept_offer(offer_id, card_list, id_player):
 
 
 if __name__ == "__main__":
-    conThread = threading.Thread(target=connexion_receiver())
+    conThread = threading.Thread(target=connexion_receiver)
     conThread.start()
+    time.sleep(3)
+    conThread.running = False
+    print("FIN DES INSCRIPTIONS")
