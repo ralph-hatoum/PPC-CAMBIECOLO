@@ -160,7 +160,7 @@ def accept_offer(offer_id, card_list, own_offers):
     # On check si le deal peut etre respecte
     test = cards_counter >= nb_cards
 
-    #
+    # test
     if test:
 
 
