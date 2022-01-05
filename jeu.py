@@ -25,12 +25,13 @@ playing_lock = threading.Lock()
 
 # con
 def connexion_receiver():
-    id_player = 0
+    id_player = -1
     while True:
-        message, _ = connexions.receive(type = 2)
+        message, _ = connexions.receive(type=2)
         message = message.decode()
         print(message)
         if message == "request_player":
+            id_player += 1
             if id_player > 4:
                 mes = "no"
                 mes = mes.encode()
@@ -43,12 +44,11 @@ def connexion_receiver():
                 print("NEW PLAYER ID : ", id_player)
                 connexions.send(mes, type=1)
                 pl = threading.Thread(target=player, args=(id_player,))
-                pl.start()
-                id_player += 1
+                #pl.start()
+
 
 
 def player(id):
-    print("NEW PLAYER ID : ",id)
     def finish_deal(message, card_list):
         mes = message.split(",")
         for i in range(mes[3]):
