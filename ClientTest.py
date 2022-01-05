@@ -15,7 +15,7 @@ test = True
 while True :
     response, _ = mq.receive(type=1)
     response = response.decode()
-    print(response)
+    print("Res =", response)
     if response == "no":
         test = False
         break
