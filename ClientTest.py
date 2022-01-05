@@ -13,7 +13,7 @@ mq.send(message, type = 2)
 test = True
 
 while True :
-    response, _ = mq.receive(type=2)
+    response, _ = mq.receive(type=1)
     if response.decode() == "no":
         test = False
         break
