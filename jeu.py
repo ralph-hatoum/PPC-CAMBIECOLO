@@ -24,24 +24,33 @@ playing = True
 playing_lock = threading.Lock()
 
 
+# con
 def connexion_receiver():
     id_player = 0
     while True:
-        message = connexions.receive(type=0)
+        message, _ = connexions.receive(type=2)
         message = message.decode()
         print(message)
         if message == "request_player":
             if id_player > 4:
-                connexions.send("no", type=1)
+                mes = "no"
+                mes = mes.encode()
+                connexions.send(mes, type=1)
+                print("NO")
                 break
             else:
+                mes = "Your id = " + str(id_player)
+                mes = mes.encode()
+                print("NEW PLAYER ID : ", id_player)
+                connexions.send(mes, type=1)
                 pl = threading.Thread(target=player, args=(id_player,))
-                connexions.send("Your id = " + str(id_player), type=1)
-                id_player += 1
                 pl.start()
+                id_player += 1
 
 
 def player(id):
+    print("NEW PLAYER ID : ", id)
+
     def finish_deal(message, card_list):
         mes = message.split(",")
         for i in range(mes[3]):

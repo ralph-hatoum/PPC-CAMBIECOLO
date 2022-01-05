@@ -8,12 +8,12 @@ message = "request_player"
 
 message = message.encode()
 
-mq.send(message, type=0)
+mq.send(message, type=2)
 
 test = True
 
 while True:
-    response, _ = mq.receive(type=0)
+    response, _ = mq.receive(type=1)
     if response.decode() == "no":
         test = False
         break
@@ -23,3 +23,5 @@ while True:
 
 if test == True:
     print("Je suis accepté dans la partie")
+else:
+    print("NO")
