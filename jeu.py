@@ -162,7 +162,7 @@ def accept_offer(offer_id, card_list, own_offers):
 
     #
     if test:
-        card_list.remove()
+
 
     return "Offer accepted"
 
