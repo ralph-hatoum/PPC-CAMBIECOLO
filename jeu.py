@@ -20,13 +20,28 @@ playing_lock = threading.Lock()
 
 
 def player(id):
+    def message_receiver(id):
+        while True:
+            message, type = mq.receive(type=id)
+            message = message.decode()
+            print(message)
+
+    message_receiver = threading.Thread(target=message_receiver, args=(id,))
+    message_receiver.start()
+
+    # Cartes du joueur
     cards = ["plane", "car", "car", "train", "plane"]
+
+    # Liste pour garder en mémoire les offres du joueur
     own_offers = []
+
+    # Intéraction avec le joueur
+
     while playing:
         interaction = input("Que voulez vous faire ? ")
 
         if interaction == "ring_bell":
-            ring_bell(cards, id)
+            ring_bell(cards, id, playing)
 
         if interaction == "display_cards":
             display_cards(cards)
@@ -47,14 +62,19 @@ def player(id):
             display_locks()
 
 
-def ring_bell(card_list, player):
+def ring_bell(card_list, player, playing):
+    # Pour sonner la cloche et signaler qu'on (pense) avoir gagné
+
     playing_lock.acquire()
     test = True
+    # On regarde si toutes les cartes sont identiques
     for i in card_list:
         if i != card_list[0]:
             test = False
+    # Si c'est le cas, on arrête le jeu
     if test:
         playing = False
+    # Sinon, on signale que le joueur n'a pas 5 cartes identiques, le jeu reprend
     else:
         print("Vous n'avez pas 5 cartes identiques")
     playing_lock.release()
@@ -73,40 +93,67 @@ def display_locks():
 
 
 def make_offer(card_list, pattern, number_of_cards, own_offers):
+
+    # On vérifie d'abord que l'offre ne contient pas plus de 3 cartes (contrainte donnée dans le sujet)
     if number_of_cards > 3:
         print("You can't do that")
+        return None
+    # Ensuite, on vérifie que le joueur a bien les cartes qu'il veut échanger
     k = 0
+    # On compte les cartes du motif donné dans le jeu du joueur
     for i in card_list:
         if i == pattern:
             k += 1
+    # On teste si le nombre de cartes offertes est inféreur ou égal au nombre de cartes du même motif présentes dans le jeu du joueur
     test = number_of_cards <= k
+    # Si c'est le cas, alors on peut échanger les cartes
     if test:
         offer_lock.acquire()
+        # On code l'offre, sous la forme "motif, nombre_de_cartes"
         offer = pattern + "," + str(number_of_cards)
+
+        # On crée un identifiant d'offre
         id = len(offers) + 1
+
+        # On ajoute l'offre dans le dictionnaire global des offres
         offers[id] = offer
+
+        # On crée un lock pour cette offre
         offers_locks[id] = threading.Lock()
+
+        # On ajoute l'identifiant de l'offre dans les propres offres du joueur
         own_offers.append(id)
 
+        # On imprime la liste des offres pour bien montrer au joueur que son offre est ajoutée
         print(offers)
     else:
+        # Si les condition n'étaient pas vérifiées, on ne peut pas faire l'échange
         print("You can't do that")
 
 
 def accept_offer(offer_id, card_list, own_offers):
 
+    # On commence par vérifier que le joueur n'a pas 5 cartes (auquel cas il ne peut pas accepter une offre)
     if len(card_list) == 5:
         print("Vous ne pouvez pas accepter d'offre si vous avez 5 cartes")
         return None
 
+    # On commence par récupérer l'offre
     offers_locks[offer_id].acquire()
-
     offer = offers[offer_id]
+
+    # On vérifie que le joueur n'accepte pas sa propre offre
     if offer_id in own_offers:
         print("Vous ne pouvez pas accepter votre propre offre")
         return None
+
+    # On transforme la chaine de caractère qui représente l'offre en liste de la forme [motif, nb_cartes]
     offer = offer.split(",")
+
+    # On récupère le nombre de cartes
     nb_cards = int(offer[1])
+
+    # On demande au joueur d'entrer les cartes à échanger (séparées par des espaces)
     cards_to_exchange = input("Entrez les " + offer[1] + " à échanger")
     cards_to_exchange = cards_to_exchange.split(" ")
 
@@ -134,13 +181,6 @@ def accept_offer(offer_id, card_list, own_offers):
             return "You can don't have the necessary cards"
 
     return "Offer accepted"
-
-
-def message_receiver(id):
-    while True:
-        message, type = mq.receive(type=id)
-        message = message.decode()
-        print(message)
 
 
 player(1)
