@@ -133,11 +133,6 @@ def make_offer(card_list, pattern, number_of_cards, own_offers):
 
 def accept_offer(offer_id, card_list, own_offers):
 
-    # On commence par vérifier que le joueur n'a pas 5 cartes (auquel cas il ne peut pas accepter une offre)
-    if len(card_list) == 5:
-        print("Vous ne pouvez pas accepter d'offre si vous avez 5 cartes")
-        return None
-
     # On commence par récupérer l'offre
     offers_locks[offer_id].acquire()
     offer = offers[offer_id]
@@ -155,10 +150,13 @@ def accept_offer(offer_id, card_list, own_offers):
 
     # On demande au joueur d'entrer les cartes à échanger (séparées par des espaces)
     cards_to_exchange = input("Entrez les " + offer[1] + " à échanger")
+
+    # On transforme en liste
     cards_to_exchange = cards_to_exchange.split(" ")
 
     test = False
 
+    # On va ensuite compter le nombre de cartes de chaque motif dans le jeu du joueur
     cards_counter = {"plane": 0, "bike": 0, "train": 0, "car": 0, "walk": 0}
 
     for i in card_list:
