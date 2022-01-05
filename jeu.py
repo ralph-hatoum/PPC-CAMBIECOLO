@@ -149,34 +149,20 @@ def accept_offer(offer_id, card_list, own_offers):
     nb_cards = int(offer[1])
 
     # On demande au joueur d'entrer les cartes à échanger (séparées par des espaces)
-    cards_to_exchange = input("Entrez les " + offer[1] + " à échanger")
+    pattern_to_exchange = input("Entrez le motif à echanger")
 
-    # On transforme en liste
-    cards_to_exchange = cards_to_exchange.split(" ")
-
-    test = False
-
-    # On va ensuite compter le nombre de cartes de chaque motif dans le jeu du joueur
-    cards_counter = {"plane": 0, "bike": 0, "train": 0, "car": 0, "walk": 0}
-
+    # On compte le nombre de carte du motif que le joueur veut echanger
+    cards_counter = 0
     for i in card_list:
-        if i == "plane":
-            cards_counter["plane"] += 1
-        if i == "bike":
-            cards_counter["bike"] += 1
-        if i == "train":
-            cards_counter["train"] += 1
-        if i == "car":
-            cards_counter["car"] += 1
-        if i == "walk":
-            cards_counter["walk"] += 1
+        if i == pattern_to_exchange:
+            cards_counter += 1
 
-    for i in cards_to_exchange:
-        cards_counter[i] -= 1
+    # On check si le deal peut etre respecte
+    test = cards_counter >= nb_cards
 
-    for i in ["plane", "bike", "train", "car", "walk"]:
-        if cards_counter[i] < 0:
-            return "You can don't have the necessary cards"
+    #
+    if test:
+        card_list.remove()
 
     return "Offer accepted"
 
