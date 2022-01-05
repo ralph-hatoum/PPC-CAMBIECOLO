@@ -14,6 +14,7 @@ test = True
 
 while True :
     response, _ = mq.receive(type=1)
+    print(response, "= responseEncode")
     response = response.decode()
     print("Res =", response)
     if response == "no":

@@ -40,7 +40,9 @@ def connexion_receiver():
                 break
             else:
                 mes = "Your id = "+str(id_player)
+                print(mes, "= mes")
                 mes = mes.encode()
+                print(mes, "= mesDECODE")
                 print("NEW PLAYER ID : ", id_player)
                 connexions.send(mes, type=1)
                 pl = threading.Thread(target=player, args=(id_player,))
