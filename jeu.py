@@ -8,6 +8,7 @@ key = 129
 keyConnexions = 150
 
 connexions = sysv_ipc.MessageQueue(keyConnexions, sysv_ipc.IPC_CREAT)
+
 mq = sysv_ipc.MessageQueue(key, sysv_ipc.IPC_CREAT)
 
 offers = {}
@@ -22,11 +23,11 @@ playing = True
 
 playing_lock = threading.Lock()
 
-# con
+
 def connexion_receiver():
     id_player = 0
     while True:
-        message = connexions.receive(type = 0)
+        message = connexions.receive(type=0)
         message = message.decode()
         print(message)
         if message == "request_player":
@@ -35,7 +36,7 @@ def connexion_receiver():
                 break
             else:
                 pl = threading.Thread(target=player, args=(id_player,))
-                connexions.send("Your id = "+str(id_player), type=1)
+                connexions.send("Your id = " + str(id_player), type=1)
                 id_player += 1
                 pl.start()
 
@@ -210,5 +211,6 @@ def accept_offer(offer_id, card_list, id_player):
 
 
 if __name__ == "__main__":
-    conThread = threading.Thread(target=connexion_receiver())
-    conThread.start()
+    players = [(threading.Thread(target=player, args=(i,))) for i in range(2)]
+    for p in players:
+        p.start()
