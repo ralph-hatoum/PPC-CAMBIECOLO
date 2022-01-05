@@ -23,6 +23,23 @@ playing = True
 playing_lock = threading.Lock()
 
 
+def connexion_receiver():
+    id_player = 0
+    while True:
+        message = connexions.receive(type = 0)
+        message = message.decode()
+        print(message)
+        if message == "request_player":
+            if id_player > 4:
+                connexions.send("no", type=1)
+                break
+            else:
+                pl = threading.Thread(target=player, args=(id_player,))
+                connexions.send("Your id = "+str(id_player), type=1)
+                id_player += 1
+                pl.start()
+
+
 def player(id):
     def finish_deal(message, card_list):
         mes = message.split(",")
@@ -193,6 +210,5 @@ def accept_offer(offer_id, card_list, id_player):
 
 
 if __name__ == "__main__":
-    players = [(threading.Thread(target=player, args=(i,))) for i in range(2)]
-    for p in players:
-        p.start()
+    conThread = threading.Thread(target=connexion_receiver())
+    conThread.start()

@@ -1,5 +1,6 @@
 import sysv_ipc
 
+<<<<<<< HEAD
 key = 150
 
 mq = sysv_ipc.MessageQueue(key)
@@ -24,3 +25,7 @@ while True :
 if test = True :
     print("Je suis accepté dans la partie")
 
+=======
+key = 5200
+mq = sysv_ipc.MessageQueue(key)
+>>>>>>> 7595430661378cbdd9d611c53babfebd21e7c185
