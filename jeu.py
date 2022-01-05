@@ -34,11 +34,11 @@ def player(id):
         if interaction == "make_offer":
             pattern = input("Entrez le motif que vous voulez échanger ")
             number = int(input("Entrez le nombre de cartes "))
-            make_offer(cards, pattern, number)
+            make_offer(cards, pattern, number, own_offers)
 
         if interaction == "accept_offer":
             number_id = input("Entrez l'identifiant de l'offre ")
-            accept_offer(int(number_id), cards)
+            accept_offer(int(number_id), cards, own_offers)
 
         if interaction == "display_offers":
             display_offers()
@@ -72,7 +72,7 @@ def display_locks():
     print(offers_locks)
 
 
-def make_offer(card_list, pattern, number_of_cards):
+def make_offer(card_list, pattern, number_of_cards, own_offers):
     if number_of_cards > 3:
         print("You can't do that")
     k = 0
@@ -86,17 +86,25 @@ def make_offer(card_list, pattern, number_of_cards):
         id = len(offers) + 1
         offers[id] = offer
         offers_locks[id] = threading.Lock()
+        own_offers.append(id)
 
         print(offers)
     else:
         print("You can't do that")
 
 
-def accept_offer(offer_id, card_list):
+def accept_offer(offer_id, card_list, own_offers):
+
+    if len(card_list) == 5:
+        print("Vous ne pouvez pas accepter d'offre si vous avez 5 cartes")
+        return None
 
     offers_locks[offer_id].acquire()
 
     offer = offers[offer_id]
+    if offer_id in own_offers:
+        print("Vous ne pouvez pas accepter votre propre offre")
+        return None
     offer = offer.split(",")
     nb_cards = int(offer[1])
     cards_to_exchange = input("Entrez les " + offer[1] + " à échanger")
