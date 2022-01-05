@@ -164,7 +164,6 @@ def accept_offer(offer_id, card_list, id_player):
     nb_cards = int(offer[1])
 
     # On demande au joueur d'entrer les cartes à échanger (séparées par des espaces)
-    print("id :", id_player)
     pattern_to_exchange = input("Entrez le motif à echanger id :" + str(id_player))
 
     # On compte le nombre de carte du motif que le joueur veut echanger
@@ -180,7 +179,7 @@ def accept_offer(offer_id, card_list, id_player):
     if test:
         for i in range(nb_cards):
             if card_list[i] == pattern_to_exchange:
-                card_list.remove(i)
+                card_list.pop(i)
         print(card_list)
         for i in range(nb_cards):
             card_list.append(offer[0])
