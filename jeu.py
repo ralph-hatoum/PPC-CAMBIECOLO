@@ -5,7 +5,9 @@ import time
 import sysv_ipc
 
 key = 129
+keyConnexions = 150
 
+connexions = sysv_ipc.MessageQueue(keyConnexions, sysv_ipc.IPC_CREAT)
 mq = sysv_ipc.MessageQueue(key, sysv_ipc.IPC_CREAT)
 
 offers = {}
