@@ -22,7 +22,7 @@ playing = True
 
 playing_lock = threading.Lock()
 
-
+# con
 def connexion_receiver():
     id_player = 0
     while True:
