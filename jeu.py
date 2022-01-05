@@ -32,6 +32,7 @@ def connexion_receiver():
         if message == "request_player":
             if id_player > 4:
                 connexions.send("no", type=1)
+                break
             else:
                 pl = threading.Thread(target=player, args=(id_player,))
                 connexions.send("Your id = "+str(id_player), type=1)
