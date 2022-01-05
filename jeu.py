@@ -166,7 +166,7 @@ def accept_offer(offer_id, card_list, id_player):
         for i in range(nb_cards):
             card_list.append(offer[0])
         print(card_list)
-        mq.send(offer_id+", Accepted")
+        mq.send("Accepted"offer_id+",")
 
     return "Offer accepted"
 
