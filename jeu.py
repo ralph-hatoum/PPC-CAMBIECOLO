@@ -20,7 +20,6 @@ playing_lock = threading.Lock()
 
 
 def player(id):
-
     def finish_deal(message, card_list):
         mes = message.split(",")
         for i in range(mes[3]):
@@ -37,10 +36,10 @@ def player(id):
             message = message.decode()
             print(message)
             if message.startswith("Accepted"):
-                finisher = threading.Thread(target=finish_deal, args=(message, card_list))
+                finisher = threading.Thread(
+                    target=finish_deal, args=(message, card_list)
+                )
                 finisher.start()
-
-
 
     message_receiver = threading.Thread(target=message_receiver, args=(id, card_list))
     message_receiver.start()
@@ -181,7 +180,7 @@ def accept_offer(offer_id, card_list, id_player):
         for i in range(nb_cards):
             card_list.append(offer[0])
         print(card_list)
-        mq.send("Accepted,"+offer[0]+","+pattern_to_exchange+","+nb_cards)
+        mq.send("Accepted," + offer[0] + "," + pattern_to_exchange + "," + nb_cards)
 
     return "Offer accepted"
 
