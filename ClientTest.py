@@ -68,7 +68,7 @@ if test == True:
     receiver.start()
 
     key = 129
- 
+
     mq = sysv_ipc.MessageQueue(key)
 
     def sender(str, mq):
@@ -102,6 +102,13 @@ if test == True:
         answer, _ = mq.receive(type=id_player + 2)
         answer = answer.decode()
         interaction = input(answer)
+
+    if interaction == "display_offers":
+        sender(interaction, mq)
+        offers, _ = mq.receive(type=id_player + 2)
+        offers = offers.decode()
+        offers.split("\n")
+        print(offers)
 
     else:
         print(how_to)
