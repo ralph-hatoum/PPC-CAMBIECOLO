@@ -30,9 +30,7 @@ test = True
 
 def message_receiver(id):
     while True:
-        print("A")
-        message, _ = mq.receive(id + 12)
-        print("B")
+        message, _ = mq.receive(id + 2)
         message = message.decode()
         print(message)
 
@@ -64,12 +62,19 @@ if test == True:
 
     # tout le code suivant doit être executé while playing :
 
+    key_receiver = 130
+
+    mq_receiver = sysv_ipc.MessageQueue(key_receiver)
+
+    receiver = threading.Thread(target=message_receiver, args=(id,))
+    receiver.start()
+
     key = 129
 
     mq = sysv_ipc.MessageQueue(key)
 
-    #receiver = threading.Thread(target=message_receiver, args=(id_player,))
-    #receiver.start()
+    # receiver = threading.Thread(target=message_receiver, args=(id_player,))
+    # receiver.start()
 
     def sender(str, mq):
         str = str.encode()
