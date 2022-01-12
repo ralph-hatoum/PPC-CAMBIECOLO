@@ -13,11 +13,13 @@ mq.send(message, type=2)
 test = True
 
 while True:
+    print("hello")
     response, _ = mq.receive(type=1)
+    print("there")
     print(response.decode(), "= responseEncode")
     response = response.decode()
     print("Res =", response)
-    if response == "no":
+    if response == "no" or response == "The game is running":
         test = False
         break
     else:
