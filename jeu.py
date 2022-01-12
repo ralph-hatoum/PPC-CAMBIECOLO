@@ -12,6 +12,8 @@ keyConnexions = 150
 
 connexions = sysv_ipc.MessageQueue(keyConnexions, sysv_ipc.IPC_CREAT)
 
+connexion_time = True
+
 mq = sysv_ipc.MessageQueue(key, sysv_ipc.IPC_CREAT)
 
 offers = {}
@@ -28,29 +30,30 @@ playing_lock = threading.Lock()
 
 
 # con
-def connexion_receiver():
+def connexion_receiver(player_list):
     id_player = -1
     while True:
         message, _ = connexions.receive(type=2)
         message = message.decode()
         print(message)
-        if message == "request_player":
-            id_player += 1
-            if id_player > 4:
-                mes = "no"
-                mes = mes.encode()
-                connexions.send(mes, type=1)
-                print("NO")
-                break
-            else:
-                mes = "Your id = " + str(id_player)
-                print(mes, "= mes")
-                mes = mes.encode()
-                print(mes, "= mesDECODE")
-                print("NEW PLAYER ID : ", id_player)
-                connexions.send(mes, type=1)
-                pl = threading.Thread(target=player, args=(id_player,))
-                #pl.start()
+        if connexion_time:
+            if message == "request_player":
+                id_player += 1
+                if id_player > 4:
+                    mes = "no"
+                    mes = mes.encode()
+                    connexions.send(mes, type=1)
+                    print("NO")
+                    break
+                else:
+                    mes = "Your id = " + str(id_player)
+                    print(mes, "= mes")
+                    mes = mes.encode()
+                    print(mes, "= mesDECODE")
+                    print("NEW PLAYER ID : ", id_player)
+                    connexions.send(mes, type=1)
+                    pl = threading.Thread(target=player, args=(id_player,))
+                    player_list.append(pl)
 
 
 def player(id):
@@ -245,10 +248,12 @@ def distrib_cartes(nb_joueurs):
 
 if __name__ == "__main__":
 
-    conProcess = Process(target=connexion_receiver)
+    players = []
+    conProcess = Process(target=connexion_receiver, args=(players,))
     conProcess.start()
-    time.sleep(10)
-    print("it should stop")
-    os.kill(conProcess.pid, signal.SIGTERM)
+    time.sleep(7)
+    connexion_time = False
     print("FIN DES INSCRIPTIONS")
-    time.sleep(10)
+    print(players)
+    while True:
+        time.sleep(1)
