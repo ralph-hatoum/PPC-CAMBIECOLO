@@ -1,4 +1,5 @@
 import sysv_ipc
+import threading
 
 
 class color:
@@ -25,6 +26,14 @@ message = message.encode()
 mq.send(message, type=2)
 
 test = True
+
+
+def message_receiver(id):
+    while True:
+        message, _ = mq.receive(id + 12)
+        message = message.decode()
+        print(message)
+
 
 while True:
     response, _ = mq.receive(type=1)
@@ -55,8 +64,11 @@ if test == True:
 
     # tout le code suivant doit être executé while playing :
 
-    key = 129
+    receiver = threading.Thread(target=message_receiver, args=(id_player,))
+    receiver.start()
 
+    key = 129
+ 
     mq = sysv_ipc.MessageQueue(key)
 
     def sender(str, mq):
@@ -84,6 +96,12 @@ if test == True:
         answer, _ = mq.receive(type=id_player + 2)
         answer = answer.decode()
         print(answer)
+
+    if interaction == "accept_offer ":
+        sender(interaction, mq)
+        answer, _ = mq.receive(type=id_player + 2)
+        answer = answer.decode()
+        interaction = input(answer)
 
     else:
         print(how_to)
