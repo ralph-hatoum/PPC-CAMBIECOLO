@@ -1,15 +1,14 @@
 import random
 import threading
-import time
 import os
-import signal
+import time
 from multiprocessing import Process
 
 import sysv_ipc
 
 key = 129
 keyConnexions = 150
-
+os.system("ipcrm -Q 150")
 connexions = sysv_ipc.MessageQueue(keyConnexions, sysv_ipc.IPC_CREAT)
 
 connexion_time = True
@@ -28,9 +27,12 @@ playing = True
 
 playing_lock = threading.Lock()
 
+players = {}
+
 
 # con
-def connexion_receiver(player_list):
+def connexion_receiver():
+    global players
     id_player = -1
     while True:
         message, _ = connexions.receive(type=2)
@@ -44,7 +46,6 @@ def connexion_receiver(player_list):
                     mes = mes.encode()
                     connexions.send(mes, type=1)
                     print("NO")
-                    break
                 else:
                     mes = "Your id = " + str(id_player)
                     print(mes, "= mes")
@@ -53,7 +54,12 @@ def connexion_receiver(player_list):
                     print("NEW PLAYER ID : ", id_player)
                     connexions.send(mes, type=1)
                     pl = threading.Thread(target=player, args=(id_player,))
-                    player_list.append(pl)
+                    players[id_player] = pl
+        else:
+            mes = "The game is running"
+            mes = mes.encode()
+            connexions.send(mes, type=1)
+            print("tentative")
 
 
 def player(id):
@@ -248,10 +254,9 @@ def distrib_cartes(nb_joueurs):
 
 if __name__ == "__main__":
 
-    players = []
-    conProcess = Process(target=connexion_receiver, args=(players,))
-    conProcess.start()
-    time.sleep(7)
+    conThread = threading.Thread(target=connexion_receiver)
+    conThread.start()
+    time.sleep(10)
     connexion_time = False
     print("FIN DES INSCRIPTIONS")
     print(players)
