@@ -31,6 +31,7 @@ while True:
     print(response.decode(), "= responseEncode")
     response = response.decode()
     print("Res =", response)
+    id_player = response
     if response == "no" or response == "The game is running":
         test = False
         break
@@ -50,36 +51,23 @@ if test == True:
     +"\033[0m"
     print(how_to)
 
+    # tout le code suivant doit être executé while playing :
+
+    key = 129
+
+    mq = sysv_ipc.MessageQueue(key)
+
     def sender(str, mq):
         str = str.encode()
-        mq.send(
-            str,
-        )
-
-    # tout le code suivant doit être executé while playing :
+        mq.send(str, type=id_player + 2)
 
     interaction = input("Que voulez vous faire ? ")
 
     if interaction == "ring_bell":
-        ring_bell(cards, id, playing)
+        sender(str)
 
     if interaction == "display_cards":
-        display_cards(cards)
-
-    if interaction == "make_offer":
-        pattern = input("Entrez le motif que vous voulez échanger id :" + str(id))
-        number = int(input("Entrez le nombre de cartes id :" + str(id)))
-        make_offer(cards, pattern, number, id)
-
-    if interaction == "accept_offer":
-        number_id = input("Entrez l'identifiant de l'offre id :" + str(id))
-        accept_offer(int(number_id), cards, id)
-
-    if interaction == "display_offers":
-        display_offers()
-
-    if interaction == "display_locks":
-        display_locks()
+        sender(str)
     else:
         print(how_to)
 
