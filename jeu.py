@@ -123,8 +123,12 @@ def display_cards(id, card_list):
     mq.send(mes, type=(id+2))
 
 
-def display_offers():
-    print(offers)
+def display_offers(t):
+    l = offers
+    mes = "Voici les offres :\n"
+    mes = "\n".join([_ for _ in offers])
+    mes = mes.encode()
+    mq.send(mes, type=t)
 
 
 def display_locks():
@@ -139,7 +143,7 @@ def make_offer(id, cards):
     res, _ = mq.receive(type=id+7)
     res = res.decode()
     offer = res.split(" ")
-    number_of_cards = offer[0]
+    number_of_cards = int(offer[0])
     pattern = offer[1]
 
     # On vérifie d'abord que l'offre ne contient pas plus de 3 cartes (contrainte donnée dans le sujet)
@@ -157,7 +161,8 @@ def make_offer(id, cards):
         if i == pattern:
             k += 1
 
-    # On teste si le nombre de cartes offertes est inféreur ou égal au nombre de cartes du même motif présentes dans le jeu du joueur
+    # On teste si le nombre de cartes offertes est inféreur ou égal au nombre de cartes du même motif présentes dans le
+    # jeu du joueur
     test = number_of_cards <= k
     # Si c'est le cas, alors on peut échanger les cartes
     if test:
@@ -167,7 +172,7 @@ def make_offer(id, cards):
 
         offer_lock.acquire()
         # On code l'offre, sous la forme "motif, nombre_de_cartes"
-        offer = pattern + "," + str(number_of_cards) + "," + str(id_player) + ", OFFER"
+        offer = pattern + "," + str(number_of_cards) + "," + str(id) + ", OFFER"
 
         # On crée un identifiant d'offre
         id = len(offers) + 1
@@ -179,7 +184,8 @@ def make_offer(id, cards):
         offers_locks[id] = threading.Lock()
 
         # On imprime la liste des offres pour bien montrer au joueur que son offre est ajoutée
-        print(offers)
+        for i in range(len(players)):
+            display_offers(i+12)
     else:
         # Si les condition n'étaient pas vérifiées, on ne peut pas faire l'échange
         mes = "You can't do that, You don't have the cards"
