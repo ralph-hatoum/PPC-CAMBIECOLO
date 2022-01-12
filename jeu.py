@@ -8,8 +8,10 @@ import sysv_ipc
 
 key = 129
 keyConnexions = 150
+keyReceiver = 130
 os.system("ipcrm -Q 150")
 os.system("ipcrm -Q 129")
+os.system("ipcrm -Q 130")
 connexions = sysv_ipc.MessageQueue(keyConnexions, sysv_ipc.IPC_CREAT)
 
 connexion_time = True
