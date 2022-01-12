@@ -79,7 +79,7 @@ def player(id):
                 finisher.start()
 
     # Cartes du joueur
-    cards = ["plane", "car", "car", "train", "plane"]
+    cards = cards_list[id]
 
     message_receiver = threading.Thread(target=message_receiver, args=(id, cards))
     message_receiver.start()
@@ -255,5 +255,8 @@ if __name__ == "__main__":
     connexion_time = False
     print("FIN DES INSCRIPTIONS")
     print(players)
-    while True:
-        time.sleep(1)
+    time.sleep(100)
+
+    all_players_cards = distrib_cartes(len(players))
+
+    # ici il faut start les joueurs
