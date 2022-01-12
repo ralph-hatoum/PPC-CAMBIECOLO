@@ -9,6 +9,7 @@ import sysv_ipc
 key = 129
 keyConnexions = 150
 os.system("ipcrm -Q 150")
+os.system("ipcrm -Q 129")
 connexions = sysv_ipc.MessageQueue(keyConnexions, sysv_ipc.IPC_CREAT)
 
 connexion_time = True
@@ -92,7 +93,7 @@ def player(id):
             accept_offer(int(number_id), cards, id)
 
         if interaction == "display_offers":
-            display_offers()
+            display_offers(id+2)
 
         if interaction == "display_locks":
             display_locks()
@@ -124,10 +125,11 @@ def display_cards(id, card_list):
 
 
 def display_offers(t):
+    print("HERE, type =", t)
     l = offers
-    mes = "Voici les offres :\n"
-    mes = "\n".join([_ for _ in offers])
+    mes = "\n".join([offers[key] for key in l])
     mes = mes.encode()
+    print("message =", mes)
     mq.send(mes, type=t)
 
 
@@ -185,12 +187,13 @@ def make_offer(id, cards):
 
         # On imprime la liste des offres pour bien montrer au joueur que son offre est ajoutée
         for i in range(len(players)):
+            print("i = ", i)
             display_offers(i+12)
     else:
         # Si les condition n'étaient pas vérifiées, on ne peut pas faire l'échange
         mes = "You can't do that, You don't have the cards"
         mes = mes.encode()
-        mq.send(mes, type=(id + 2))
+        mq.send(mes, type=(id+2))
 
 
 def accept_offer(offer_id, card_list, id_player):
@@ -260,7 +263,7 @@ if __name__ == "__main__":
 
     conThread = threading.Thread(target=connexion_receiver)
     conThread.start()
-    time.sleep(3)
+    time.sleep(10)
     connexion_time = False
     print("FIN DES INSCRIPTIONS")
     print(players)

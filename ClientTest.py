@@ -17,29 +17,29 @@ class color:
 
 key = 150
 
-mq = sysv_ipc.MessageQueue(key)
+connexions = sysv_ipc.MessageQueue(key)
 
 message = "request_player"
 
 message = message.encode()
 
-mq.send(message, type=2)
+connexions.send(message, type=2)
 
 test = True
 
 
 def message_receiver(id):
     while True:
+        print("A")
         message, _ = mq.receive(id + 12)
+        print("B")
         message = message.decode()
         print(message)
 
 
 while True:
-    response, _ = mq.receive(type=1)
-    print(response.decode(), "= responseEncode")
+    response, _ = connexions.receive(type=1)
     response = response.decode()
-    print("Res =", response)
     id_player = int(response)
     if response == "no" or response == "The game is running":
         test = False
@@ -64,12 +64,12 @@ if test == True:
 
     # tout le code suivant doit être executé while playing :
 
-    receiver = threading.Thread(target=message_receiver, args=(id_player,))
-    receiver.start()
-
     key = 129
 
     mq = sysv_ipc.MessageQueue(key)
+
+    #receiver = threading.Thread(target=message_receiver, args=(id_player,))
+    #receiver.start()
 
     def sender(str, mq):
         str = str.encode()
