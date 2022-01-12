@@ -63,8 +63,9 @@ def connexion_receiver():
 
 
 def player(id):
+
     # Cartes du joueur
-    cards = ["plane", "plane", "plane", "car", "car"]
+    cards = ["plane", "plane", "plane", "plane", "plane"]
 
     # Intéraction avec le joueur
 
@@ -73,10 +74,6 @@ def player(id):
 
         interaction, _ = mq.receive(type=(id + 7))
         interaction = interaction.decode()
-<<<<<<< HEAD
-        print(interaction, "INTe")
-=======
->>>>>>> a3f73dcfa1c540efb759eaed70da7649714b357f
 
         if interaction == "sleep":
             time.sleep(10)
@@ -123,7 +120,7 @@ def display_cards(id, card_list):
     l = card_list
     mes = ",".join([_ for _ in l])
     mes = mes.encode()
-    mq.send(mes, type=(id + 2))
+    mq.send(mes, type=(id+2))
 
 
 def display_offers():
@@ -263,6 +260,6 @@ if __name__ == "__main__":
     print(players)
     all_players_cards = distrib_cartes(len(players))
     mq = sysv_ipc.MessageQueue(key, sysv_ipc.IPC_CREAT)
-
     for i in range(len(players)):
         players[i].start()
+
