@@ -31,7 +31,7 @@ while True:
     print(response.decode(), "= responseEncode")
     response = response.decode()
     print("Res =", response)
-    id_player = response
+    id_player = int(response)
     if response == "no" or response == "The game is running":
         test = False
         break
@@ -64,10 +64,10 @@ if test == True:
     interaction = input("Que voulez vous faire ? ")
 
     if interaction == "ring_bell":
-        sender(str)
+        sender(interaction, mq)
 
     if interaction == "display_cards":
-        sender(str)
+        sender(interaction, mq)
     else:
         print(how_to)
 

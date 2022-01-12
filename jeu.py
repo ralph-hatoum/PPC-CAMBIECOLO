@@ -72,6 +72,7 @@ def player(id):
         for i in range(mes[3]):
             card_list.append(mes[2])
         print(card_list, "id :", id)
+
     def message_receiver(id, card_list):
         while True:
             message, _ = mq.receive()
@@ -268,4 +269,3 @@ if __name__ == "__main__":
     mq = sysv_ipc.MessageQueue(key, sysv_ipc.IPC_CREAT)
     for p in players:
         p.start()
-
