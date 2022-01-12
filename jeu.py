@@ -65,7 +65,7 @@ def connexion_receiver():
 def player(id):
 
     # Cartes du joueur
-    cards = ["plane", "plane", "plane", "plane", "plane"]
+    cards = ["plane", "plane", "plane", "car", "car"]
 
     # Intéraction avec le joueur
 
