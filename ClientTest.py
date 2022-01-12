@@ -31,7 +31,7 @@ while True:
     print(response.decode(), "= responseEncode")
     response = response.decode()
     print("Res =", response)
-    id_player = response
+    id_player = int(response)
     if response == "no" or response == "The game is running":
         test = False
         break
@@ -46,9 +46,9 @@ if test == True:
     # Il faut attendre que les threads joueurs se lancent
     # Il faut recevoir playing
 
-    how_to = "\033[91m"
-    +"Mode d'emploi : \n Vous avez accès aux commandes : \n ring_bell pour sonner la cloche \n make_offer pour faire une offre \n accept_offer pour accepter une offre \n display offers pour afficher les offres"
-    +"\033[0m"
+    how_to = "\033[91m Mode d'emploi : \n Vous avez accès aux commandes : \n ring_bell pour sonner la cloche " \
+             "\n make_offer pour faire une offre \n accept_offer pour accepter une offre \n display offers pour " \
+             "afficher les offres \033[0m"
     print(how_to)
 
     # tout le code suivant doit être executé while playing :
@@ -59,15 +59,20 @@ if test == True:
 
     def sender(str, mq):
         str = str.encode()
-        mq.send(str, type=id_player + 2)
+        mq.send(str, type=(id_player + 7))
 
     interaction = input("Que voulez vous faire ? ")
 
     if interaction == "ring_bell":
-        sender(str)
+        sender(interaction, mq)
 
     if interaction == "display_cards":
-        sender(str)
+        sender(interaction, mq)
+        c = mq.receive(type=id_player+2)
+        c = c.decode()
+        print(c)
+        cards = c.split(",")
+
     else:
         print(how_to)
 

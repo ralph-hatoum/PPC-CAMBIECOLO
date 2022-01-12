@@ -47,7 +47,7 @@ def connexion_receiver():
                     connexions.send(mes, type=1)
                     print("NO")
                 else:
-                    mes = "Your id = " + str(id_player)
+                    mes = str(id_player)
                     print(mes, "= mes")
                     mes = mes.encode()
                     print(mes, "= mesDECODE")
@@ -63,41 +63,19 @@ def connexion_receiver():
 
 
 def player(id):
-    def finish_deal(message, card_list):
-        mes = message.split(",")
-        for i in range(mes[3]):
-            if card_list[i] == mes[1]:
-                card_list.remove(i)
-        print(card_list, "id :", id)
-        for i in range(mes[3]):
-            card_list.append(mes[2])
-        print(card_list, "id :", id)
-    def message_receiver(id, card_list):
-        while True:
-            message, _ = mq.receive()
-            message = message.decode()
-            print(message, "id :", id)
-            if message.startswith("Accepted"):
-                finisher = threading.Thread(
-                    target=finish_deal, args=(message, card_list)
-                )
-                finisher.start()
 
     # Cartes du joueur
     cards = ["plane", "plane", "plane", "plane", "plane"]
 
-    message_receiver = threading.Thread(target=message_receiver, args=(id, cards))
-    message_receiver.start()
-
     # Intéraction avec le joueur
 
     while playing:
-        mes = "Que voulez vous faire ? id :"
-        mes = mes.encode()
-        mq.send(mes, type=1)
+        print("Playing")
 
-        interaction, _ = mq.receive(type=(id + 2))
+        interaction, _ = mq.receive(type=(id + 7))
         interaction = interaction.decode()
+        print(interaction, "INTe")
+
 
         if interaction == "sleep":
             time.sleep(10)
@@ -106,7 +84,7 @@ def player(id):
             ring_bell(cards, id, playing)
 
         if interaction == "display_cards":
-            display_cards(cards)
+            display_cards(id, cards)
 
         if interaction == "make_offer":
             pattern = input("Entrez le motif que vous voulez échanger id :" + str(id))
@@ -142,8 +120,11 @@ def ring_bell(card_list, player, playing):
     playing_lock.release()
 
 
-def display_cards(card_list):
-    print(card_list)
+def display_cards(id, card_list):
+    l = card_list
+    mes = ",".join([_ for _ in l])
+    mes = mes.encode()
+    mq.send(mes, type=(id+2))
 
 
 def display_offers():
@@ -260,12 +241,12 @@ if __name__ == "__main__":
 
     conThread = threading.Thread(target=connexion_receiver)
     conThread.start()
-    time.sleep(10)
+    time.sleep(3)
     connexion_time = False
     print("FIN DES INSCRIPTIONS")
     print(players)
     all_players_cards = distrib_cartes(len(players))
     mq = sysv_ipc.MessageQueue(key, sysv_ipc.IPC_CREAT)
-    for p in players:
-        p.start()
+    for i in range(len(players)):
+        players[i].start()
 
