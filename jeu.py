@@ -232,11 +232,13 @@ def distrib_cartes(nb_joueurs):
         for j in range(5):
             tas_de_cartes.append(i)
 
-    cartes = [[] for i in range(nb_joueurs)]
+    cartes = {i: [] for i in range(nb_joueurs)}
 
     for i in range(nb_joueurs):
         for j in range(5):
             cartes[i].append(motifs[random.randint(0, len(motifs) - 1)])
+
+    return cartes
 
 
 if __name__ == "__main__":
@@ -244,5 +246,5 @@ if __name__ == "__main__":
     conThread = threading.Thread(target=connexion_receiver)
     conThread.start()
     time.sleep(3)
-    conThread.running = False
+    conThread.terminate()
     print("FIN DES INSCRIPTIONS")
