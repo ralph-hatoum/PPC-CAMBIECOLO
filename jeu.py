@@ -1,6 +1,9 @@
 import random
 import threading
 import time
+import os
+import signal
+from multiprocessing import Process
 
 import sysv_ipc
 
@@ -47,7 +50,7 @@ def connexion_receiver():
                 print("NEW PLAYER ID : ", id_player)
                 connexions.send(mes, type=1)
                 pl = threading.Thread(target=player, args=(id_player,))
-                # pl.start()
+                #pl.start()
 
 
 def player(id):
@@ -237,12 +240,15 @@ def distrib_cartes(nb_joueurs):
     for i in range(nb_joueurs):
         for j in range(5):
             cartes[i].append(motifs[random.randint(0, len(motifs) - 1)])
+    return cartes
 
 
 if __name__ == "__main__":
 
-    conThread = threading.Thread(target=connexion_receiver)
-    conThread.start()
-    time.sleep(3)
-    conThread.running = False
+    conProcess = Process(target=connexion_receiver)
+    conProcess.start()
+    time.sleep(10)
+    print("it should stop")
+    os.kill(conProcess.pid, signal.SIGTERM)
     print("FIN DES INSCRIPTIONS")
+    time.sleep(10)
