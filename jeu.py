@@ -220,6 +220,25 @@ def accept_offer(offer_id, card_list, id_player):
     return "Offer accepted"
 
 
+def distrib_cartes(nb_joueurs):
+
+    motifs = ["plane", "car", "train", "bike", "shoes"]
+
+    motifs = motifs[0:nb_joueurs]
+
+    tas_de_cartes = []
+
+    for i in motifs:
+        for j in range(5):
+            tas_de_cartes.append(i)
+
+    cartes = [[] for i in range(nb_joueurs)]
+
+    for i in range(nb_joueurs):
+        for j in range(5):
+            cartes[i].append(motifs[random.randint(0, len(motifs) - 1)])
+
+
 if __name__ == "__main__":
 
     conThread = threading.Thread(target=connexion_receiver)
