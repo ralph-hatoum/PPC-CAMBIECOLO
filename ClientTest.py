@@ -28,11 +28,13 @@ connexions.send(message, type=2)
 test = True
 
 
-def message_receiver(id):
+def message_receiver(id, mq):
     while True:
-        message, _ = mq.receive(id + 2)
+        message, _ = mq.receive(type=id+2)
         message = message.decode()
+        print("\n -- -- -- OFFERS -- -- --")
         print(message)
+        print("-- -- -- END OFFERS -- -- --")
 
 
 while True:
@@ -66,7 +68,7 @@ if test == True:
 
     mq_receiver = sysv_ipc.MessageQueue(key_receiver)
 
-    receiver = threading.Thread(target=message_receiver, args=(id,))
+    receiver = threading.Thread(target=message_receiver, args=(id_player,mq_receiver))
     receiver.start()
 
     key = 129
@@ -114,6 +116,9 @@ if test == True:
         offers = offers.decode()
         offers.split("\n")
         print(offers)
+
+    if interaction == "help":
+        print(how_to)
 
     else:
         print(how_to)
