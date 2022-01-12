@@ -51,7 +51,7 @@ def connexion_receiver():
                     print(mes, "= mes")
                     mes = mes.encode()
                     print(mes, "= mesDECODE")
-                    print("NEW PLAYER ID : ", id_player)
+                    print(id_player)
                     connexions.send(mes, type=1)
                     pl = threading.Thread(target=player, args=(id_player,))
                     players[id_player] = pl
@@ -72,7 +72,6 @@ def player(id):
         for i in range(mes[3]):
             card_list.append(mes[2])
         print(card_list, "id :", id)
-
     def message_receiver(id, card_list):
         while True:
             message, _ = mq.receive()
@@ -85,7 +84,7 @@ def player(id):
                 finisher.start()
 
     # Cartes du joueur
-    cards = cards_list[id]
+    cards = ["plane", "plane", "plane", "plane", "plane"]
 
     message_receiver = threading.Thread(target=message_receiver, args=(id, cards))
     message_receiver.start()
@@ -93,10 +92,15 @@ def player(id):
     # Intéraction avec le joueur
 
     while playing:
-        interaction = input("Que voulez vous faire ? id :" + str(id))
+        mes = "Que voulez vous faire ? id :"
+        mes = mes.encode()
+        mq.send(mes, type=1)
+
+        interaction, _ = mq.receive(type=(id + 2))
+        interaction = interaction.decode()
 
         if interaction == "sleep":
-            time.sleep(1)
+            time.sleep(10)
 
         if interaction == "ring_bell":
             ring_bell(cards, id, playing)
@@ -260,8 +264,8 @@ if __name__ == "__main__":
     connexion_time = False
     print("FIN DES INSCRIPTIONS")
     print(players)
-    time.sleep(100)
-
     all_players_cards = distrib_cartes(len(players))
+    mq = sysv_ipc.MessageQueue(key, sysv_ipc.IPC_CREAT)
+    for p in players:
+        p.start()
 
-    # ici il faut start les joueurs
