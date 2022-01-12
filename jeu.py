@@ -29,7 +29,6 @@ playing = True
 playing_lock = threading.Lock()
 
 
-
 # con
 def connexion_receiver(player_list):
     id_player = -1
@@ -239,7 +238,7 @@ def distrib_cartes(nb_joueurs):
         for j in range(5):
             tas_de_cartes.append(i)
 
-    cartes = [[] for i in range(nb_joueurs)]
+    cartes = {i: [] for i in range(nb_joueurs)}
 
     for i in range(nb_joueurs):
         for j in range(5):
