@@ -85,9 +85,7 @@ def player(id):
             display_cards(id, cards)
 
         if interaction == "make_offer":
-            pattern = input("Entrez le motif que vous voulez échanger id :" + str(id))
-            number = int(input("Entrez le nombre de cartes id :" + str(id)))
-            make_offer(cards, pattern, number, id)
+            make_offer(id, cards)
 
         if interaction == "accept_offer":
             number_id = input("Entrez l'identifiant de l'offre id :" + str(id))
@@ -133,18 +131,29 @@ def display_locks():
     print(offers_locks)
 
 
-def make_offer(card_list, pattern, number_of_cards, id_player):
+def make_offer(id, cards):
+    mes = "Quelle offre voulez-vous faire [Nbr Motif]"
+    mes = mes.encode()
+    mq.send(mes, type=id+2)
+
+    res, _ = mq.receive(type=id+7)
+    res = res.decode()
+    offer = res.split(" ")
+    number_of_cards = offer[0]
+    pattern = offer[1]
 
     # On vérifie d'abord que l'offre ne contient pas plus de 3 cartes (contrainte donnée dans le sujet)
     if number_of_cards > 3:
-        print("You can't do that", "id :", id_player)
+        mes = "You can't do that, 3 cards maximum"
+        mes = mes.encode()
+        mq.send(mes, type=id+2)
         return None
 
     # Ensuite, on vérifie que le joueur a bien les cartes qu'il veut échanger
     k = 0
 
     # On compte les cartes du motif donné dans le jeu du joueur
-    for i in card_list:
+    for i in cards:
         if i == pattern:
             k += 1
 
@@ -152,6 +161,10 @@ def make_offer(card_list, pattern, number_of_cards, id_player):
     test = number_of_cards <= k
     # Si c'est le cas, alors on peut échanger les cartes
     if test:
+        mes = "Offer accepted, you cannot touch the cards implied anymore"
+        mes = mes.encode()
+        mq.send(mes, type=id + 2)
+
         offer_lock.acquire()
         # On code l'offre, sous la forme "motif, nombre_de_cartes"
         offer = pattern + "," + str(number_of_cards) + "," + str(id_player) + ", OFFER"
@@ -169,7 +182,9 @@ def make_offer(card_list, pattern, number_of_cards, id_player):
         print(offers)
     else:
         # Si les condition n'étaient pas vérifiées, on ne peut pas faire l'échange
-        print("You can't do that", "id :", id_player)
+        mes = "You can't do that, You don't have the cards"
+        mes = mes.encode()
+        mq.send(mes, type=(id + 2))
 
 
 def accept_offer(offer_id, card_list, id_player):
