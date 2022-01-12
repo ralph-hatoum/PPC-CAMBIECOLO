@@ -1,21 +1,21 @@
 import random
 
-nb_joueurs = 5
 
-motifs = ["plane", "car", "train", "bike", "shoes"]
+def distrib_cartes():
+    nb_joueurs = 5
 
-motifs = motifs[0:nb_joueurs]
+    motifs = ["plane", "car", "train", "bike", "shoes"]
 
-tas_de_cartes = []
+    motifs = motifs[0:nb_joueurs]
 
-for i in motifs:
-    for j in range(5):
-        tas_de_cartes.append(i)
+    tas_de_cartes = []
 
-cartes = [[] for i in range(nb_joueurs)]
+    for i in motifs:
+        for j in range(5):
+            tas_de_cartes.append(i)
 
-for i in range(nb_joueurs):
-    for j in range(5):
-        cartes[i].append(motifs[random.randint(0, len(motifs) - 1)])
+    cartes = [[] for i in range(nb_joueurs)]
 
-print(cartes)
+    for i in range(nb_joueurs):
+        for j in range(5):
+            cartes[i].append(motifs[random.randint(0, len(motifs) - 1)])

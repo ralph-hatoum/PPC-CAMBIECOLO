@@ -41,7 +41,9 @@ def connexion_receiver():
                 break
             else:
                 mes = "Your id = " + str(id_player)
+                print(mes, "= mes")
                 mes = mes.encode()
+                print(mes, "= mesDECODE")
                 print("NEW PLAYER ID : ", id_player)
                 connexions.send(mes, type=1)
                 pl = threading.Thread(target=player, args=(id_player,))
@@ -142,6 +144,7 @@ def make_offer(card_list, pattern, number_of_cards, id_player):
     if number_of_cards > 3:
         print("You can't do that", "id :", id_player)
         return None
+
     # Ensuite, on vérifie que le joueur a bien les cartes qu'il veut échanger
     k = 0
 
@@ -218,6 +221,5 @@ def accept_offer(offer_id, card_list, id_player):
 
 
 if __name__ == "__main__":
-    players = [(threading.Thread(target=player, args=(i,))) for i in range(2)]
-    for p in players:
-        p.start()
+    conThread = threading.Thread(target=connexion_receiver())
+    conThread.start()
