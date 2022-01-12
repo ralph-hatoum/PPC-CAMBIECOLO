@@ -68,10 +68,10 @@ if test == True:
 
     if interaction == "display_cards":
         sender(interaction, mq)
-        c = mq.receive(type=id_player+2)
-        c = c.decode()
-        print(c)
-        cards = c.split(",")
+        cards, _ = mq.receive(type=id_player+2)
+        cards = cards.decode()
+        cards = cards.split(",")
+        print(cards)
 
     else:
         print(how_to)

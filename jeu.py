@@ -74,8 +74,6 @@ def player(id):
 
         interaction, _ = mq.receive(type=(id + 7))
         interaction = interaction.decode()
-        print(interaction, "INTe")
-
 
         if interaction == "sleep":
             time.sleep(10)
