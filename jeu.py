@@ -244,7 +244,7 @@ if __name__ == "__main__":
 
     conThread = threading.Thread(target=connexion_receiver)
     conThread.start()
-    time.sleep(10)
+    time.sleep(5)
     connexion_time = False
     print("FIN DES INSCRIPTIONS")
     print(players)

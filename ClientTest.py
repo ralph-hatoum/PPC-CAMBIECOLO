@@ -13,6 +13,15 @@ class color:
     UNDERLINE = "\033[4m"
     END = "\033[0m"
 
+
+class card:
+    def __init__(self, aMotif):
+        self.motif = aMotif
+        self.avaiable = True
+
+    def __str__(self):
+        return self.motif
+
 key = 150
 
 connexions = sysv_ipc.MessageQueue(key)
@@ -26,6 +35,7 @@ connexions.send(message, type=2)
 test = True
 
 cards = []
+
 
 
 def message_receiver(id, mq):
@@ -58,9 +68,10 @@ if test == True:
 
     cardsDistributed, _ = mq.receive(type=id_player + 2)
     cardsDistributed = cardsDistributed.decode()
-    cards = cardsDistributed.split(";")
+    listCards = cardsDistributed.split(";")
+    for c in listCards:
+        cards.append(card(c))
 
-    print("My cards are", cards)
 
     # Il faut attendre que les threads joueurs se lancent
     # Il faut recevoir playing
@@ -95,11 +106,12 @@ if test == True:
             sender(interaction, mq)
 
         if interaction == "display_cards":
-            sender(interaction, mq)
-            cards, _ = mq.receive(type=id_player + 2)
-            cards = cards.decode()
-            cards = cards.split(",")
-            print(cards)
+            for c in cards:
+                if c.avaiable == True:
+                    print("\033[92m"+c.__str__(), end=",")
+                else:
+                    print("\033[91m\033[1m"+c.__str__(), end=",")
+            print("")
 
         if interaction == "make_offer":
             sender(interaction, mq)
@@ -121,17 +133,18 @@ if test == True:
 
                 # On compte les cartes du motif donné dans le jeu du joueur
                 for i in cards:
-                    if i == pattern:
-                        k += 1
-
+                    print(i.__str__())
+                    if i.avaiable == True:
+                        if i.motif == pattern:
+                            k += 1
+                            if k <= 3:
+                                i.avaiable = False
 
                 # On teste si le nombre de cartes offertes est inféreur ou égal au nombre de cartes du même motif
                 #  présentes dans lejeu du joueur
                 test = number_of_cards <= k
 
                 if test:
-
-
                     sender(interaction, mq)
                     answer, _ = mq.receive(type=id_player + 2)
                     answer = answer.decode()
