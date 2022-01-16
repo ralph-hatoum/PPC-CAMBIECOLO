@@ -1,7 +1,6 @@
 import sysv_ipc
 import threading
 
-
 class color:
     PURPLE = "\033[95m"
     CYAN = "\033[96m"
@@ -13,7 +12,6 @@ class color:
     BOLD = "\033[1m"
     UNDERLINE = "\033[4m"
     END = "\033[0m"
-
 
 key = 150
 
@@ -27,10 +25,12 @@ connexions.send(message, type=2)
 
 test = True
 
+cards = []
+
 
 def message_receiver(id, mq):
     while True:
-        message, _ = mq.receive(type=id+2)
+        message, _ = mq.receive(type=id + 2)
         message = message.decode()
         print("\n -- -- -- OFFERS -- -- --")
         print(message)
@@ -51,6 +51,16 @@ while True:
 if test == True:
     print("Je suis accepté dans la partie")
     print("En attente que le jeu commence")
+    print("Wainting for my cards")
+
+    key = 129
+    mq = sysv_ipc.MessageQueue(key)
+
+    cardsDistributed, _ = mq.receive(type=id_player + 2)
+    cardsDistributed = cardsDistributed.decode()
+    cards = cardsDistributed.split(";")
+
+    print("My cards are", cards)
 
     # Il faut attendre que les threads joueurs se lancent
     # Il faut recevoir playing
@@ -68,60 +78,86 @@ if test == True:
 
     mq_receiver = sysv_ipc.MessageQueue(key_receiver)
 
-    receiver = threading.Thread(target=message_receiver, args=(id_player,mq_receiver))
+    receiver = threading.Thread(target=message_receiver, args=(id_player, mq_receiver))
     receiver.start()
 
-    key = 129
-
-    mq = sysv_ipc.MessageQueue(key)
-
-    # receiver = threading.Thread(target=message_receiver, args=(id_player,))
-    # receiver.start()
 
     def sender(str, mq):
         str = str.encode()
         mq.send(str, type=(id_player + 7))
 
-    interaction = input("Que voulez vous faire ? ")
 
-    if interaction == "ring_bell":
-        sender(interaction, mq)
+    playing = True
+    while playing:
+        interaction = input("Que voulez vous faire ? ")
 
-    if interaction == "display_cards":
-        sender(interaction, mq)
-        cards, _ = mq.receive(type=id_player + 2)
-        cards = cards.decode()
-        cards = cards.split(",")
-        print(cards)
+        if interaction == "ring_bell":
+            sender(interaction, mq)
 
-    if interaction == "make_offer":
-        sender(interaction, mq)
-        answer, _ = mq.receive(type=id_player + 2)
-        answer = answer.decode()
-        interaction = input(answer)
-        sender(interaction, mq)
-        answer, _ = mq.receive(type=id_player + 2)
-        answer = answer.decode()
-        print(answer)
+        if interaction == "display_cards":
+            sender(interaction, mq)
+            cards, _ = mq.receive(type=id_player + 2)
+            cards = cards.decode()
+            cards = cards.split(",")
+            print(cards)
 
-    if interaction == "accept_offer ":
-        sender(interaction, mq)
-        answer, _ = mq.receive(type=id_player + 2)
-        answer = answer.decode()
-        interaction = input(answer)
+        if interaction == "make_offer":
+            sender(interaction, mq)
+            answer, _ = mq.receive(type=id_player + 2)
+            answer = answer.decode()
+            interaction = input(answer)
 
-    if interaction == "display_offers":
-        sender(interaction, mq)
-        offers, _ = mq.receive(type=id_player + 2)
-        offers = offers.decode()
-        offers.split("\n")
-        print(offers)
+            offer = interaction.split(" ")
+            number_of_cards = int(offer[0])
+            pattern = offer[1]
 
-    if interaction == "help":
-        print(how_to)
+            # On vérifie d'abord que l'offre ne contient pas plus de 3 cartes (contrainte donnée dans le sujet)
+            if number_of_cards > 3:
+                print("You can't do that, 3 cards maximum")
 
-    else:
-        print(how_to)
+                # Ensuite, on vérifie que le joueur a bien les cartes qu'il veut échanger
+            else:
+                k = 0
+
+                # On compte les cartes du motif donné dans le jeu du joueur
+                for i in cards:
+                    if i == pattern:
+                        k += 1
+
+
+                # On teste si le nombre de cartes offertes est inféreur ou égal au nombre de cartes du même motif
+                #  présentes dans lejeu du joueur
+                test = number_of_cards <= k
+
+                if test:
+
+
+                    sender(interaction, mq)
+                    answer, _ = mq.receive(type=id_player + 2)
+                    answer = answer.decode()
+                    print(answer)
+
+                else:
+                    print("You can't do that, You don't have the cards")
+
+        if interaction == "accept_offer ":
+            sender(interaction, mq)
+            answer, _ = mq.receive(type=id_player + 2)
+            answer = answer.decode()
+            interaction = input(answer)
+
+        if interaction == "display_offers":
+            sender(interaction, mq)
+            offers, _ = mq.receive(type=id_player + 2)
+            offers = offers.decode()
+            offers.split("\n")
+            print(offers)
+
+        if interaction == "help":
+            print(how_to)
+
+        else:
+            print(how_to)
 
 
 else:

@@ -52,9 +52,7 @@ def connexion_receiver():
                     print("NO")
                 else:
                     mes = str(id_player)
-                    print(mes, "= mes")
                     mes = mes.encode()
-                    print(mes, "= mesDECODE")
                     print(id_player)
                     connexions.send(mes, type=1)
                     pl = threading.Thread(target=player, args=(id_player,))
@@ -77,7 +75,9 @@ def player(id):
         print("Playing")
 
         interaction, _ = mq.receive(type=(id + 7))
+        print("RECEPTION")
         interaction = interaction.decode()
+        print(interaction)
 
         if interaction == "sleep":
             time.sleep(10)
@@ -151,51 +151,26 @@ def make_offer(id, cards):
     number_of_cards = int(offer[0])
     pattern = offer[1]
 
-    # On vérifie d'abord que l'offre ne contient pas plus de 3 cartes (contrainte donnée dans le sujet)
-    if number_of_cards > 3:
-        mes = "You can't do that, 3 cards maximum"
-        mes = mes.encode()
-        mq.send(mes, type=id+2)
-        return None
+    mes = "Offer accepted, you cannot touch the cards implied anymore"
+    mes = mes.encode()
+    mq.send(mes, type=id + 2)
 
-    # Ensuite, on vérifie que le joueur a bien les cartes qu'il veut échanger
-    k = 0
+    offer_lock.acquire()
+    # On code l'offre, sous la forme "motif, nombre_de_cartes"
+    offer = pattern + "," + str(number_of_cards) + "," + str(id) + ", OFFER"
 
-    # On compte les cartes du motif donné dans le jeu du joueur
-    for i in cards:
-        if i == pattern:
-            k += 1
+    # On crée un identifiant d'offre
+    id = len(offers) + 1
 
-    # On teste si le nombre de cartes offertes est inféreur ou égal au nombre de cartes du même motif présentes dans le
-    # jeu du joueur
-    test = number_of_cards <= k
-    # Si c'est le cas, alors on peut échanger les cartes
-    if test:
-        mes = "Offer accepted, you cannot touch the cards implied anymore"
-        mes = mes.encode()
-        mq.send(mes, type=id + 2)
+    # On ajoute l'offre dans le dictionnaire global des offres
+    offers[id] = offer
 
-        offer_lock.acquire()
-        # On code l'offre, sous la forme "motif, nombre_de_cartes"
-        offer = pattern + "," + str(number_of_cards) + "," + str(id) + ", OFFER"
+    # On crée un lock pour cette offre
+    offers_locks[id] = threading.Lock()
 
-        # On crée un identifiant d'offre
-        id = len(offers) + 1
-
-        # On ajoute l'offre dans le dictionnaire global des offres
-        offers[id] = offer
-
-        # On crée un lock pour cette offre
-        offers_locks[id] = threading.Lock()
-
-        # On imprime la liste des offres pour bien montrer au joueur que son offre est ajoutée
-        for i in range(len(players)):
-            display_offers(i+2, receiver)
-    else:
-        # Si les condition n'étaient pas vérifiées, on ne peut pas faire l'échange
-        mes = "You can't do that, You don't have the cards"
-        mes = mes.encode()
-        mq.send(mes, type=(id+2))
+    # On imprime la liste des offres pour bien montrer au joueur que son offre est ajoutée
+    for i in range(len(players)):
+        display_offers(i+2, receiver)
 
 
 def accept_offer(offer_id, card_list, id_player):
@@ -242,7 +217,6 @@ def accept_offer(offer_id, card_list, id_player):
 
 
 def distrib_cartes(nb_joueurs):
-
     motifs = ["plane", "car", "train", "bike", "shoes"]
 
     motifs = motifs[0:nb_joueurs]
@@ -253,12 +227,17 @@ def distrib_cartes(nb_joueurs):
         for j in range(5):
             tas_de_cartes.append(i)
 
-    cartes = {i: [] for i in range(nb_joueurs)}
+    cards = [""] *5
 
     for i in range(nb_joueurs):
         for j in range(5):
-            cartes[i].append(motifs[random.randint(0, len(motifs) - 1)])
-    return cartes
+            ranCard = random.randint(0, len(tas_de_cartes) - 1)
+            cards[i] += tas_de_cartes[ranCard]
+            if j != 4:
+                cards[i] += ";"
+            tas_de_cartes.pop(ranCard)
+
+    return cards
 
 
 if __name__ == "__main__":
@@ -269,8 +248,8 @@ if __name__ == "__main__":
     connexion_time = False
     print("FIN DES INSCRIPTIONS")
     print(players)
-    all_players_cards = distrib_cartes(len(players))
-    mq = sysv_ipc.MessageQueue(key, sysv_ipc.IPC_CREAT)
+    cards = distrib_cartes(len(players))
     for i in range(len(players)):
+        mq.send(cards[i], type=i+2)
         players[i].start()
 
