@@ -201,7 +201,7 @@ def accept_offer(id_player, offers_dict, offers_lock_dict):
     offer_id = int(offer_id)
 
     # On commence par récupérer l'offre
-    offers_lock_dict[offer_id].acquire()
+    # offers_lock_dict[offer_id].acquire()
     offer = offers_dict[offer_id]
 
     # On récupère le nombre de cartes
@@ -242,7 +242,7 @@ def accept_offer(id_player, offers_dict, offers_lock_dict):
 
         # On release les locks
         offer_lock.release()
-        offers_lock_dict[offer_id].release()
+        # offers_lock_dict[offer_id].release()
 
         return "Offer accepted"
 
