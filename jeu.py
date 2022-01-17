@@ -19,6 +19,8 @@ connexion_time = True
 
 mq = sysv_ipc.MessageQueue(key, sysv_ipc.IPC_CREAT)
 
+last_offer_id = 0
+
 offers = {}
 
 offers_locks = {}
@@ -33,6 +35,15 @@ playing_lock = threading.Lock()
 
 players = {}
 
+
+class offre:
+    def __init__(self, aId_offer, aId_player, aNumber_of_cards, aMotif):
+        self.id_offer = aId_offer
+        self.id_player = aId_player
+        self.number_of_cards = aNumber_of_cards
+        self.motif = aMotif
+    def __str__(self):
+        return "OFFER_ID = " + str(self.id_offer) + " for " + str(self.number_of_cards) + " cards"
 
 # con
 def connexion_receiver():
@@ -64,7 +75,7 @@ def connexion_receiver():
             print("tentative")
 
 
-def player(id):
+def player(id_player):
 
     # Cartes du joueur
     cards = ["plane", "plane", "plane", "plane", "plane"]
@@ -73,9 +84,7 @@ def player(id):
 
     while playing:
         print("Playing")
-
-        interaction, _ = mq.receive(type=(id + 7))
-        print("RECEPTION")
+        interaction, _ = mq.receive(type=(id_player + 7))
         interaction = interaction.decode()
         print(interaction)
 
@@ -83,20 +92,16 @@ def player(id):
             time.sleep(10)
 
         if interaction == "ring_bell":
-            ring_bell(cards, id, playing)
-
-        if interaction == "display_cards":
-            display_cards(id, cards)
+            ring_bell(cards, id_player, playing)
 
         if interaction == "make_offer":
-            make_offer(id, cards)
+            make_offer(id_player)
 
         if interaction == "accept_offer":
-            number_id = input("Entrez l'identifiant de l'offre id :" + str(id))
-            accept_offer(int(number_id), cards, id)
+            accept_offer(id_player)
 
         if interaction == "display_offers":
-            display_offers(id+2, mq)
+            display_offers(id_player+2, mq)
 
         if interaction == "display_locks":
             display_locks()
@@ -120,32 +125,22 @@ def ring_bell(card_list, player, playing):
     playing_lock.release()
 
 
-def display_cards(id, card_list):
-    l = card_list
-    mes = ",".join([_ for _ in l])
-    mes = mes.encode()
-    mq.send(mes, type=(id+2))
-
-
 def display_offers(t, message_queue):
-    print("HERE, type =", t)
     l = offers
-    mes = "\n".join([offers[key] for key in l])
+    mes = "\n".join([str(offers[key]) for key in l])
     mes = mes.encode()
     print("message =", mes)
     message_queue.send(mes, type=t)
+    print("Yes we did it")
 
 
 def display_locks():
     print(offers_locks)
 
 
-def make_offer(id, cards):
-    mes = "Quelle offre voulez-vous faire [Nbr Motif]"
-    mes = mes.encode()
-    mq.send(mes, type=id+2)
-
-    res, _ = mq.receive(type=id+7)
+def make_offer(id_player):
+    global last_offer_id
+    res, _ = mq.receive(type=id_player+7)
     res = res.decode()
     offer = res.split(" ")
     number_of_cards = int(offer[0])
@@ -153,57 +148,81 @@ def make_offer(id, cards):
 
     mes = "Offer accepted, you cannot touch the cards implied anymore"
     mes = mes.encode()
-    mq.send(mes, type=id + 2)
+    mq.send(mes, type=id_player + 2)
 
+    print("la ?")
     offer_lock.acquire()
-    # On code l'offre, sous la forme "motif, nombre_de_cartes"
-    offer = pattern + "," + str(number_of_cards) + "," + str(id) + ", OFFER"
 
     # On crée un identifiant d'offre
-    id = len(offers) + 1
+    last_offer_id = last_offer_id+1
+    id_offer = last_offer_id
+
+    # On creer une offre
+    offer = offre(id_offer, id_player, number_of_cards, pattern)
 
     # On ajoute l'offre dans le dictionnaire global des offres
-    offers[id] = offer
+    offers[id_offer] = offer
 
     # On crée un lock pour cette offre
-    offers_locks[id] = threading.Lock()
+    offers_locks[id_offer] = threading.Lock()
 
     # On imprime la liste des offres pour bien montrer au joueur que son offre est ajoutée
+    print("ici ?")
     for i in range(len(players)):
         display_offers(i+2, receiver)
 
+    offer_lock.release()
 
-def accept_offer(offer_id, card_list, id_player):
+
+def accept_offer(id_player):
+
+    offer_accepted, _ = mq.receive(type=id_player+7)
+    offer_accepted = offer_accepted.decode()
+    print("l'offre que l'on veut accepter, et le motif en echange", offer_accepted)
+    offer_a = offer_accepted.split(" ")
+    offer_id = offer_a[0]
+    pattern_to_exchange = offer_a[1]
+    offer_id = int(offer_id)
 
     # On commence par récupérer l'offre
     offers_locks[offer_id].acquire()
     offer = offers[offer_id]
 
-    # On transforme la chaine de caractère qui représente l'offre en liste de la forme [motif, nb_cartes]
-    offer = offer.split(",")
-
-    # On vérifie que le joueur n'accepte pas sa propre offre
-    if id_player == offer[2]:
-        print("Vous ne pouvez pas accepter votre propre offre", "id :", id_player)
-        return None
-
     # On récupère le nombre de cartes
-    nb_cards = int(offer[1])
+    mes = str(offer.number_of_cards) + " " + str(offer.motif) + " " + str(offer.id_player)
+    mes = mes.encode()
+    mq.send(mes, type=id_player + 2)
 
-    # On demande au joueur d'entrer les cartes à échanger (séparées par des espaces)
-    pattern_to_exchange = input("Entrez le motif à echanger id :" + str(id_player))
+    # On récupère la conclusion du joueur
+    conclusion, _ = mq.receive(type=id_player+7)
+    conclusion = conclusion.decode()
+    if conclusion == "NO_DEAL":
+        print("NO DEAL")
+        return None
+    else :
+        print("Ok offer accepted")
+        print("Joueur dont on prend l'offre : ", str(offer.id_player))
+        print("Motif donné par celui qui a crée l'offre :", str(offer.motif))
+        print("Nombre de cartes :", str(offer.number_of_cards))
+        print("Joueur qui accepte l'offre : ", str(id_player))
+        print("Motif donné par celui qui accepte :", str(pattern_to_exchange))
 
-    # On compte le nombre de carte du motif que le joueur veut echanger
-    cards_counter = 0
-    for i in card_list:
-        if i == pattern_to_exchange:
-            cards_counter += 1
+        # On previens le joueur que son offre est accepté
+        mes = str(offer.motif) + " " + str(pattern_to_exchange) + " " + str(offer.number_of_cards)
+        mes = mes.encode()
+        receiver.send(mes, type=offer.id_player + 2)
 
-    # On check si le deal peut etre respecte
-    test = cards_counter >= nb_cards
+        # On supprime cette offre
+        offer_lock.acquire()
+        offers.pop(offer_id)
 
-    # test
-    if test:
+        # On release les locks
+        offer_lock.release()
+        offers_locks[offer_id].release()
+
+        return "Offer accepted"
+
+"""
         for i in range(nb_cards):
             if card_list[i] == pattern_to_exchange:
                 card_list.pop(i)
@@ -212,8 +231,7 @@ def accept_offer(offer_id, card_list, id_player):
             card_list.append(offer[0])
         print(card_list)
         mq.send("Accepted," + offer[0] + "," + pattern_to_exchange + "," + nb_cards)
-
-    return "Offer accepted"
+"""
 
 
 def distrib_cartes(nb_joueurs):
