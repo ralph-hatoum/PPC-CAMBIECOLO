@@ -92,7 +92,7 @@ def player(id_player):
             time.sleep(10)
 
         if interaction == "ring_bell":
-            ring_bell(cards, id_player, playing)
+            ring_bell(id_player)
 
         if interaction == "make_offer":
             make_offer(id_player)
@@ -107,22 +107,16 @@ def player(id_player):
             display_locks()
 
 
-def ring_bell(card_list, player, playing):
-    # Pour sonner la cloche et signaler qu'on (pense) avoir gagné
-
-    playing_lock.acquire()
-    test = True
-    # On regarde si toutes les cartes sont identiques
-    for i in card_list:
-        if i != card_list[0]:
-            test = False
-    # Si c'est le cas, on arrête le jeu
-    if test:
+def ring_bell(id_player):
+    global playing
+    # On récupère la conclusion du joueur
+    conclusion, _ = mq.receive(type = id_player + 7)
+    conclusion = conclusion.decode()
+    if conclusion == "WON":
+        playing_lock.acquire()
         playing = False
-    # Sinon, on signale que le joueur n'a pas 5 cartes identiques, le jeu reprend
-    else:
-        print("Vous n'avez pas 5 cartes identiques", "id :", id)
-    playing_lock.release()
+        # Sinon, on signale que le joueur n'a pas 5 cartes identiques, le jeu reprend
+        playing_lock.release()
 
 
 def display_offers(t, message_queue):
@@ -222,17 +216,6 @@ def accept_offer(id_player):
 
         return "Offer accepted"
 
-"""
-        for i in range(nb_cards):
-            if card_list[i] == pattern_to_exchange:
-                card_list.pop(i)
-        print(card_list)
-        for i in range(nb_cards):
-            card_list.append(offer[0])
-        print(card_list)
-        mq.send("Accepted," + offer[0] + "," + pattern_to_exchange + "," + nb_cards)
-"""
-
 
 def distrib_cartes(nb_joueurs):
     motifs = ["plane", "car", "train", "bike", "shoes"]
@@ -262,7 +245,7 @@ if __name__ == "__main__":
 
     conThread = threading.Thread(target=connexion_receiver)
     conThread.start()
-    time.sleep(5)
+    time.sleep(15)
     connexion_time = False
     print("FIN DES INSCRIPTIONS")
     print(players)

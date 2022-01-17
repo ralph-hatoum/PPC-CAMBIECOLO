@@ -84,7 +84,7 @@ def message_receiver(id, mq):
         if message.startswith("OFF"):
             print("\n -- -- -- OFFERS -- -- --")
             print(message)
-            print("-- -- -- END OFFERS -- -- --")
+            print("-- -- -- END OFFERS -- -- --\n")
         else:
             print("Someone accepted my offer :) ")
             deal = message.split(" ")
@@ -133,6 +133,14 @@ def accept_offer():
         print("NO YOU CANNOT")
         sender("NO_DEAL", mq)
 
+
+def ring_bell():
+    test = True
+    i = 0
+    while test and i < 4:
+        test = cards[i].motif == cards[i+1].motif
+        i += 1
+    return test
 
 while True:
     response, _ = connexions.receive(type=1)
@@ -188,6 +196,12 @@ if test == True:
 
         if interaction == "ring_bell":
             sender(interaction, mq)
+            if ring_bell():
+                print("RING BELL, congrats")
+                sender("WON")
+            else:
+                print("not yet, you need 5 identicals cards")
+                sender("NO")
 
         if interaction == "display_cards":
             display_cards()
@@ -205,7 +219,9 @@ if test == True:
             offers, _ = mq.receive(type=id_player + 2)
             offers = offers.decode()
             offers.split("\n")
-            print(offers)
+            print("\n -- -- -- OFFERS -- -- --")
+            print(str(offers))
+            print("-- -- -- END OFFERS -- -- --\n")
 
         if interaction == "help":
             print(how_to)
