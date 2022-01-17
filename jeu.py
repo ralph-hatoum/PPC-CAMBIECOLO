@@ -2,7 +2,7 @@ import random
 import threading
 import os
 import time
-from multiprocessing import Process, Manager, Lock
+from multiprocessing import Process, Manager, Lock, Value
 
 import sysv_ipc
 
@@ -42,11 +42,11 @@ class offre:
 
     def __str__(self):
         return (
-            "OFFER_ID = "
+            "\033[36mOFFER_ID = "
             + str(self.id_offer)
-            + " for "
+            + "\033[0m for \033[91m\033[1m"
             + str(self.number_of_cards)
-            + " cards"
+            + " cards\033[0m"
         )
 
 
@@ -71,7 +71,16 @@ def connexion_receiver():
                     mes = mes.encode()
                     print(id_player)
                     connexions.send(mes, type=1)
-                    pl = Process(target=player, args=(id_player, offers, offers_locks))
+                    pl = Process(
+                        target=player,
+                        args=(
+                            id_player,
+                            offers,
+                            offers_locks,
+                            last_offer_id,
+                            last_offer_id_lock,
+                        ),
+                    )
                     players[id_player] = pl
         else:
             mes = "The game is running"
@@ -80,7 +89,7 @@ def connexion_receiver():
             print("tentative")
 
 
-def player(id_player, offers_dict, offers_lock_dict):
+def player(id_player, offers_dict, offers_lock_dict, last_offer_id, last_offer_id_lock):
 
     # Cartes du joueur
     cards = ["plane", "plane", "plane", "plane", "plane"]
@@ -100,7 +109,13 @@ def player(id_player, offers_dict, offers_lock_dict):
             ring_bell(id_player)
 
         if interaction == "make_offer":
-            make_offer(id_player, offers_dict, offers_lock_dict, last_offer_id)
+            make_offer(
+                id_player,
+                offers_dict,
+                offers_lock_dict,
+                last_offer_id,
+                last_offer_id_lock,
+            )
 
         if interaction == "accept_offer":
             accept_offer(id_player, offers_dict, offers_lock_dict)
@@ -136,7 +151,9 @@ def display_locks():
     print(offers_locks)
 
 
-def make_offer(id_player, offers_dict, offers_lock_dict, last_offer_id):
+def make_offer(
+    id_player, offers_dict, offers_lock_dict, last_offer_id, last_offer_id_lock
+):
     res, _ = mq.receive(type=id_player + 7)
     res = res.decode()
     offer = res.split(" ")
@@ -151,8 +168,9 @@ def make_offer(id_player, offers_dict, offers_lock_dict, last_offer_id):
     offer_lock.acquire()
 
     # On crée un identifiant d'offre
-    last_offer_id.value
-    id_offer = last_offer_id
+    with last_offer_id_lock:
+        last_offer_id[0] += 1
+    id_offer = last_offer_id[0]
 
     # On creer une offre
     offer = offre(id_offer, id_player, number_of_cards, pattern)
@@ -254,15 +272,20 @@ def distrib_cartes(nb_joueurs):
 
 
 if __name__ == "__main__":
+
     manager_offres = Manager()
     manager_offres_locks = Manager()
+
     offers = manager_offres.dict()
     offers_locks = manager_offres_locks.dict()
-    last_offer_id = Manager().Value(int, 0)
+
+    last_offer_id_lock = Lock()
+    last_offer_manager = Manager()
+    last_offer_id = last_offer_manager.list([0])
 
     conThread = threading.Thread(target=connexion_receiver)
     conThread.start()
-    time.sleep(15)
+    time.sleep(10)
     connexion_time = False
     print("FIN DES INSCRIPTIONS")
     print(players)
