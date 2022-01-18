@@ -47,13 +47,12 @@ cards = []
 
 def how_to():
     print(
-        color.UNDERLINE + color.BLUE + " Mode d'emploi : \n" + color.END +
-        color.BLUE + " Vous avez accès aux commandes : \n " +
-        color.BOLD + color.PURPLE + "ring_bell : " + color.END + color.BLUE + "pour sonner la cloche " +
-        color.BOLD + color.PURPLE + "\n display_cards : " + color.END + color.BLUE + "pour voir vos cartes " +
-        color.BOLD + color.PURPLE + "\n make_offer : " + color.END + color.BLUE + " pour faire une offre " +
-        color.BOLD + color.PURPLE + "\n accept_offer : " + color.END + color.BLUE + " pour accepter une offre " +
-        color.BOLD + color.PURPLE + "\n display_offers : " + color.END + color.BLUE + " pour afficher les offres " +
+        color.UNDERLINE + color.BLUE + " Commands : \n" + color.END +
+        color.BOLD + color.PURPLE + "ring_bell : " + color.END + color.BLUE + "to ring the bell" +
+        color.BOLD + color.PURPLE + "\n display_cards : " + color.END + color.BLUE + "to see your cards" +
+        color.BOLD + color.PURPLE + "\n make_offer : " + color.END + color.BLUE + "to make an offer" +
+        color.BOLD + color.PURPLE + "\n accept_offer : " + color.END + color.BLUE + "to accept an offer" +
+        color.BOLD + color.PURPLE + "\n display_offers : " + color.END + color.BLUE + "to display the offers available" +
         color.END + "\n"
         )
 
@@ -140,7 +139,7 @@ def display_cards():
 def make_offer():
 
     while True:
-        interaction = input(" -- Quelle offre voulez-vous faire ? [Nbr Motif]\n")
+        interaction = input(" -- What do you give ? [Nbr Pattern]\n")
         offer = interaction.split(" ")
         try:
             number_of_cards = int(offer[0])
@@ -172,7 +171,7 @@ def display_offers():
 
 
 def accept_offer():
-    offer_id = input(" -- Entrez l'identifiant de l'offre\n")
+    offer_id = input(" -- Enter the offer's id\n")
 
     # ICI, FAUT bloquer si l'offre est déja en cours de négociation
     sender(offer_id, mq)
@@ -183,14 +182,14 @@ def accept_offer():
         print("Too bad ! Someone is already bargaining on this offer !")
         return None
 
-    pattern_to_exchange = input(" -- Contre quel motif voulez vous échanger ?\n")
+    pattern_to_exchange = input(" -- What do you want to give ?\n")
     offer_accepted = offer_id + " " + pattern_to_exchange
     sender(offer_accepted, mq)
 
     answer, _ = mq.receive(type=id_player + 2)
     answer = answer.decode()
     if answer == "no":
-        print("Cette offre n'existe pas !\n")
+        print("This offer doesn't exist !\n")
         return None
 
     offer_received = answer.split(" ")
@@ -221,7 +220,7 @@ def sender(str, mq):
 
 def play():
     global mq, cards, playing
-    interaction = input(" -- Que voulez vous faire ? \n")
+    interaction = input(" -- What do you want to do ? \n")
 
     if interaction == "ring_bell" or interaction == "rb":
         sender("ring_bell", mq)
@@ -277,7 +276,7 @@ if __name__ == "__main__":
         print("   N E W  G A M E !")
         print("-- -- -- -- -- -- -- --")
 
-        print("\nWainting for my cards")
+        print("\nWaiting for my cards")
 
         key = 129
         mq = sysv_ipc.MessageQueue(key)
@@ -289,6 +288,9 @@ if __name__ == "__main__":
             cards.append(card(c))
 
         how_to()
+
+        print("Your cards :")
+        display_cards()
 
         key_receiver = 130
         mq_receiver = sysv_ipc.MessageQueue(key_receiver)
