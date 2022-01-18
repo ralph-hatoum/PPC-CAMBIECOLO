@@ -82,7 +82,7 @@ def connexion_receiver():
             print("tentative")
 
 
-def player(id_player, offers_dict, offers_lock_dict, last_offer_id, last_offer_id_lock):
+def player(id_player, offers_dict, offers_lock_dict, last_offer_id, len_player, last_offer_id_lock):
 
     # Intéraction avec le joueur
 
@@ -97,7 +97,7 @@ def player(id_player, offers_dict, offers_lock_dict, last_offer_id, last_offer_i
             ring_bell(id_player)
 
         if interaction == "make_offer":
-            make_offer(id_player, offers_dict, offers_lock_dict, last_offer_id, last_offer_id_lock)
+            make_offer(id_player, offers_dict, offers_lock_dict, last_offer_id, len_player, last_offer_id_lock)
 
         if interaction == "accept_offer":
             accept_offer(id_player, offers_dict, offers_lock_dict)
@@ -131,7 +131,7 @@ def display_locks():
     print(offers_locks)
 
 
-def make_offer(id_player, offers_dict, offers_lock_dict, last_offer_id, nbr_players):
+def make_offer(id_player, offers_dict, offers_lock_dict, last_offer_id, nbr_players, last_offer_id_lock):
     res, _ = mq.receive(type=id_player + 7)
     res = res.decode()
     offer = res.split(" ")
@@ -145,8 +145,8 @@ def make_offer(id_player, offers_dict, offers_lock_dict, last_offer_id, nbr_play
     offer_lock.acquire()
 
     # On crée un identifiant d'offre
-    # with last_offer_id_lock:
-    last_offer_id[0] += 1
+    with last_offer_id_lock:
+        last_offer_id[0] += 1
 
     id_offer = last_offer_id[0]
 
@@ -272,7 +272,7 @@ if __name__ == "__main__":
     cards = distrib_cartes(len_player)
 
     for i in range(len_player):
-        pl = Process(target=player, args=(i, offers, offers_locks, last_offer_id, len_player))
+        pl = Process(target=player, args=(i, offers, offers_locks, last_offer_id, len_player, last_offer_id_lock))
         players[i] = pl
         mq.send(cards[i], type=i + 2)
         pl.start()
