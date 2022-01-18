@@ -87,21 +87,23 @@ def switch_cards(pattern_to_drop, pattern_to_add, number_of_cards):
 
 def message_receiver(id, mq):
     while True:
+        print("mr")
         message, _ = mq.receive(type=id + 2)
         message = message.decode()
+        print("mr recoit", message)
         if message.startswith("\033[36mOFF"):
             print("\n -- -- -- \033[93mOFFERS\033[0m -- -- --")
             print(message)
             print("-- -- -- \033[93mEND OFFERS\033[0m -- -- --\n")
         else:
             deal = message.split(" ")
-            print(color.RED + "DEAL !\nYOU GAVE " + color.YELLOW + str(deal[2]) + " " + deal[0] + "\n" + color.END +
+            print(color.RED + "DEAL !\nYOU GAVE " + color.YELLOW + str(deal[2]) + " " + deal[0] +
+                  "\n" + color.END + color.BLUE +
                   "YOU RECEIVED " + color.DARKCYAN + str(deal[2]) + " " + deal[1] + "\n" + color.END)
             switch_cards(deal[0], deal[1], int(deal[2]))
 
 
 def display_cards():
-    print("\n")
     for c in cards:
         if c.avaiable == True:
             print("\033[92m" + c.__str__(), end=",")
@@ -147,6 +149,9 @@ def accept_offer():
     offer_received = answer.split(" ")
     if int(offer_received[2]) != id_player and cards_check(pattern_to_exchange, int(offer_received[0])):
         sender(pattern_to_exchange, mq)
+        print(color.RED + "DEAL !\nYOU GAVE " + color.YELLOW + str(offer_received[0]) + " " + pattern_to_exchange +
+              "\n" + color.END + color.BLUE +
+              "YOU RECEIVED " + color.DARKCYAN + str(offer_received[0]) + " " + offer_received[1] + "\n" + color.END)
         switch_cards(pattern_to_exchange, offer_received[1], int(offer_received[0]))
     else:
         print("NO YOU CANNOT")

@@ -2,25 +2,22 @@ import random
 import threading
 import os
 import time
-from multiprocessing import Process, Manager, Lock, Value
+from multiprocessing import Process, Manager, Lock
 
 import sysv_ipc
 
 key = 129
 keyConnexions = 150
 keyReceiver = 130
-# os.system("ipcrm -Q 150")
-# os.system("ipcrm -Q 129")
-# os.system("ipcrm -Q 130")
-connexions = sysv_ipc.MessageQueue(keyConnexions, sysv_ipc.IPC_CREAT)
-receiver = sysv_ipc.MessageQueue(keyReceiver, sysv_ipc.IPC_CREAT)
 
 connexion_time = True
-
+connexions = sysv_ipc.MessageQueue(keyConnexions, sysv_ipc.IPC_CREAT)
+receiver = sysv_ipc.MessageQueue(keyReceiver, sysv_ipc.IPC_CREAT)
 mq = sysv_ipc.MessageQueue(key, sysv_ipc.IPC_CREAT)
 
 last_offer_id = 0
 
+len_player = 0
 
 point_list = [0, 0, 0, 0, 0]
 
@@ -41,23 +38,19 @@ class offre:
         self.motif = aMotif
 
     def __str__(self):
-        return (
-            "\033[36mOFFER_ID = "
-            + str(self.id_offer)
-            + "\033[0m for \033[91m\033[1m"
-            + str(self.number_of_cards)
-            + " cards\033[0m"
-        )
+        return "\033[36mOFFER_ID = " + str(self.id_offer) + "\033[0m for \033[91m\033[1m" + str(self.number_of_cards) \
+                + " cards\033[0m"
+
 
 
 # con
 def connexion_receiver():
-    global players
+    print("OHOH")
+    global players, len_player
     id_player = -1
     while True:
         message, _ = connexions.receive(type=2)
         message = message.decode()
-        print(message)
         if connexion_time:
             if message == "request_player":
                 id_player += 1
@@ -69,19 +62,8 @@ def connexion_receiver():
                 else:
                     mes = str(id_player)
                     mes = mes.encode()
-                    print(id_player)
                     connexions.send(mes, type=1)
-                    pl = Process(
-                        target=player,
-                        args=(
-                            id_player,
-                            offers,
-                            offers_locks,
-                            last_offer_id,
-                            last_offer_id_lock,
-                        ),
-                    )
-                    players[id_player] = pl
+                    len_player += 1
         else:
             mes = "The game is running"
             mes = mes.encode()
@@ -89,18 +71,14 @@ def connexion_receiver():
             print("tentative")
 
 
-def player(id_player, offers_dict, offers_lock_dict, last_offer_id, last_offer_id_lock):
-
-    # Cartes du joueur
-    cards = ["plane", "plane", "plane", "plane", "plane"]
+def player(id_player, offers_dict, offers_lock_dict, nbr_players):
 
     # Intéraction avec le joueur
-
+    print(id_player, "PLAYING")
     while playing:
-        print("Playing")
         interaction, _ = mq.receive(type=(id_player + 7))
         interaction = interaction.decode()
-        print(interaction)
+        print(interaction, "INTER")
 
         if interaction == "sleep":
             time.sleep(10)
@@ -109,13 +87,7 @@ def player(id_player, offers_dict, offers_lock_dict, last_offer_id, last_offer_i
             ring_bell(id_player)
 
         if interaction == "make_offer":
-            make_offer(
-                id_player,
-                offers_dict,
-                offers_lock_dict,
-                last_offer_id,
-                last_offer_id_lock,
-            )
+            make_offer(id_player, offers_dict, offers_lock_dict, last_offer_id, nbr_players)
 
         if interaction == "accept_offer":
             accept_offer(id_player, offers_dict, offers_lock_dict)
@@ -142,18 +114,14 @@ def ring_bell(id_player):
 def display_offers(t, message_queue, offers_dict):
     mes = "\n".join([str(offers_dict[key]) for key in offers_dict.keys()])
     mes = mes.encode()
-    print("message =", mes)
     message_queue.send(mes, type=t)
-    print("Yes we did it")
 
 
 def display_locks():
     print(offers_locks)
 
 
-def make_offer(
-    id_player, offers_dict, offers_lock_dict, last_offer_id, last_offer_id_lock
-):
+def make_offer(id_player, offers_dict, offers_lock_dict, last_offer_id, nbr_players):
     res, _ = mq.receive(type=id_player + 7)
     res = res.decode()
     offer = res.split(" ")
@@ -164,28 +132,24 @@ def make_offer(
     mes = mes.encode()
     mq.send(mes, type=id_player + 2)
 
-    print("la ?")
     offer_lock.acquire()
 
     # On crée un identifiant d'offre
-    with last_offer_id_lock:
-        last_offer_id[0] += 1
-    id_offer = last_offer_id[0]
+    #last_offer_id.value
+    id_offer = last_offer_id
 
     # On creer une offre
     offer = offre(id_offer, id_player, number_of_cards, pattern)
 
     # On ajoute l'offre dans le dictionnaire global des offres
     offers_dict[id_offer] = offer
-    print(offers_dict)
 
     # On crée un lock pour cette offre
     offers_lock_dict[id_offer] = Manager().Lock()
 
     # On imprime la liste des offres pour bien montrer au joueur que son offre est ajoutée
-    print("ici ?")
-    for i in range(len(players)):
-        display_offers(i + 2, receiver)
+    for i in range(nbr_players):
+        display_offers(i + 2, receiver, offers_dict)
 
     offer_lock.release()
 
@@ -194,7 +158,6 @@ def accept_offer(id_player, offers_dict, offers_lock_dict):
 
     offer_accepted, _ = mq.receive(type=id_player + 7)
     offer_accepted = offer_accepted.decode()
-    print("l'offre que l'on veut accepter, et le motif en echange", offer_accepted)
     offer_a = offer_accepted.split(" ")
     offer_id = offer_a[0]
     pattern_to_exchange = offer_a[1]
@@ -218,13 +181,6 @@ def accept_offer(id_player, offers_dict, offers_lock_dict):
         print("NO DEAL")
         return None
     else:
-        print("Ok offer accepted")
-        print("Joueur dont on prend l'offre : ", str(offer.id_player))
-        print("Motif donné par celui qui a crée l'offre :", str(offer.motif))
-        print("Nombre de cartes :", str(offer.number_of_cards))
-        print("Joueur qui accepte l'offre : ", str(id_player))
-        print("Motif donné par celui qui accepte :", str(pattern_to_exchange))
-
         # On previens le joueur que son offre est accepté
         mes = (
             str(offer.motif)
@@ -272,24 +228,28 @@ def distrib_cartes(nb_joueurs):
 
 
 if __name__ == "__main__":
+    os.system("ipcrm -Q 150")
+    os.system("ipcrm -Q 129")
+    os.system("ipcrm -Q 130")
+
+    connexions = sysv_ipc.MessageQueue(keyConnexions, sysv_ipc.IPC_CREAT)
+    receiver = sysv_ipc.MessageQueue(keyReceiver, sysv_ipc.IPC_CREAT)
+    mq = sysv_ipc.MessageQueue(key, sysv_ipc.IPC_CREAT)
 
     manager_offres = Manager()
     manager_offres_locks = Manager()
-
     offers = manager_offres.dict()
     offers_locks = manager_offres_locks.dict()
-
-    last_offer_id_lock = Lock()
-    last_offer_manager = Manager()
-    last_offer_id = last_offer_manager.list([0])
+    last_offer_id = Manager().Value(int, 0)
 
     conThread = threading.Thread(target=connexion_receiver)
     conThread.start()
-    time.sleep(10)
+    time.sleep(7)
     connexion_time = False
     print("FIN DES INSCRIPTIONS")
-    print(players)
-    cards = distrib_cartes(len(players))
-    for i in range(len(players)):
+    cards = distrib_cartes(len_player)
+    for i in range(len_player):
+        pl = Process(target=player, args=(i, offers, offers_locks, len_player))
+        players[i] = pl
         mq.send(cards[i], type=i + 2)
-        players[i].start()
+        pl.start()
