@@ -164,17 +164,23 @@ def accept_offer(id_player, offers_dict, is_available_dic):
     offer_id = offer_id.decode()
     offer_id = int(offer_id)
 
-    if is_available_dic[offer_id] == True:
-        is_available_dic[offer_id] = False
-        mes = "YUP".encode()
-        mq.send(mes, type=id_player + 2)
-    elif is_available_dic[offer_id] == False:
+    try:
+        if is_available_dic[offer_id] == True:
+            is_available_dic[offer_id] = False
+            mes = "YUP".encode()
+            mq.send(mes, type=id_player + 2)
+        elif is_available_dic[offer_id] == False:
+            mes = "NOPE".encode()
+            mq.send(mes, type=id_player + 2)
+            return None
+
+        offer_accepted, _ = mq.receive(type=id_player + 7)
+        offer_accepted = offer_accepted.decode()
+    except KeyError:
         mes = "NOPE".encode()
         mq.send(mes, type=id_player + 2)
         return None
 
-    offer_accepted, _ = mq.receive(type=id_player + 7)
-    offer_accepted = offer_accepted.decode()
     try:
         offer_a = offer_accepted.split(" ")
         offer_id = offer_a[0]
@@ -201,7 +207,6 @@ def accept_offer(id_player, offers_dict, is_available_dic):
     conclusion, _ = mq.receive(type=id_player + 7)
     conclusion = conclusion.decode()
     if conclusion == "NO_DEAL":
-        print("NO DEAL")
         return None
     else:
         # On previens le joueur que son offre est accepté
@@ -279,7 +284,7 @@ if __name__ == "__main__":
     availability_manager = Manager()
     is_available_dic = availability_manager.dict()
 
-    time.sleep(5)
+    time.sleep(10)
     connexion_time = False
 
 
