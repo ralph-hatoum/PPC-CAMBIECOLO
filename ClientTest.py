@@ -227,8 +227,7 @@ if __name__ == "__main__":
             if interaction == "ring_bell":
                 sender(interaction, mq)
                 if ring_bell():
-                    print("RING BELL, congrats")
-                    sender("WON", mq)
+                    print("ndzk")
                 else:
                     print("not yet, you need 5 identicals cards")
                     sender("NO", mq)
