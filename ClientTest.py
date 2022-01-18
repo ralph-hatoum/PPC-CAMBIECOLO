@@ -1,3 +1,5 @@
+import sys
+
 import sysv_ipc
 import threading
 
@@ -34,13 +36,13 @@ message = message.encode()
 
 connexions.send(message, type=2)
 
-#test = True
+key_receiver = 130
+mq_receiver = sysv_ipc.MessageQueue(key_receiver)
+
 playing = True
-game = True
 
 cards = []
 
-points = 0
 
 
 def how_to():
@@ -48,6 +50,7 @@ def how_to():
         color.UNDERLINE + color.BLUE + " Mode d'emploi : \n" + color.END +
         color.BLUE + " Vous avez accès aux commandes : \n " +
         color.BOLD + color.PURPLE + "ring_bell : " + color.END + color.BLUE + "pour sonner la cloche " +
+        color.BOLD + color.PURPLE + "\n display_cards : " + color.END + color.BLUE + "pour voir vos cartes " +
         color.BOLD + color.PURPLE + "\n make_offer : " + color.END + color.BLUE + " pour faire une offre " +
         color.BOLD + color.PURPLE + "\n accept_offer : " + color.END + color.BLUE + " pour accepter une offre " +
         color.BOLD + color.PURPLE + "\n display_offers : " + color.END + color.BLUE + " pour afficher les offres " +
@@ -97,28 +100,31 @@ def switch_cards(pattern_to_drop, pattern_to_add, number_of_cards):
             break
 
 
-def message_receiver(id, mq):
-    global playing
-    while True:
-        message, _ = mq.receive(type=id + 2)
-        message = message.decode()
-        if message.startswith("\033[36mOFF"):
-            print("\n -- -- -- \033[93mOFFERS\033[0m -- -- --")
-            print(message)
-            print("-- -- -- \033[93mEND OFFERS\033[0m -- -- --\n")
-        elif message.startswith("player"):
-            m = message.split(" ")
-            if int(m[1]) != id:
-                print("\n" + color.RED + color.BOLD + message + color.END + "\n")
-                print("Press enter for the next game")
-            playing = False
-        else:
-            deal = message.split(" ")
-            print(color.RED + "DEAL (someone accepted your offer) !\nYOU GAVE "
-                  + color.YELLOW + str(deal[2]) + " " + deal[0] +
-                  "\n" + color.END + color.BLUE +
-                  "YOU RECEIVED " + color.DARKCYAN + str(deal[2]) + " " + deal[1] + "\n" + color.END)
-            switch_cards(deal[0], deal[1], int(deal[2]))
+class message_receiver(threading.Thread):
+    daemon = True
+
+    def run(self):
+        global playing, cards, id_player, mq_receiver
+        while True:
+            message, _ = mq_receiver.receive(type=id_player + 2)
+            message = message.decode()
+            if message.startswith("\033[36mOFF"):
+                print("\n -- -- -- \033[93mOFFERS\033[0m -- -- --")
+                print(message)
+                print("-- -- -- \033[93mEND OFFERS\033[0m -- -- --\n")
+            elif message.startswith("player"):
+                m = message.split(" ")
+                if int(m[1]) != id_player:
+                    print("\n" + color.RED + color.BOLD + message + color.END + "\n")
+                    print("press 'ENTER' to quit")
+                playing = False
+            else:
+                deal = message.split(" ")
+                print(color.RED + "DEAL (someone accepted your offer) !\nYOU GAVE "
+                      + color.YELLOW + str(deal[2]) + " " + deal[0] +
+                      "\n" + color.END + color.BLUE +
+                      "YOU RECEIVED " + color.DARKCYAN + str(deal[2]) + " " + deal[1] + "\n" + color.END)
+                switch_cards(deal[0], deal[1], int(deal[2]))
 
 
 def display_cards():
@@ -132,11 +138,16 @@ def display_cards():
 
 
 def make_offer():
-    interaction = input(" -- Quelle offre voulez-vous faire [Nbr Motif]\n")
 
-    offer = interaction.split(" ")
-    number_of_cards = int(offer[0])
-    pattern = offer[1]
+    while True:
+        interaction = input(" -- Quelle offre voulez-vous faire ? [Nbr Motif]\n")
+        offer = interaction.split(" ")
+        try:
+            number_of_cards = int(offer[0])
+            pattern = offer[1]
+            break
+        except ValueError:
+            print("An int for 1st charactere please")
 
     if cards_check(pattern, number_of_cards):
         block_cards(pattern, number_of_cards)
@@ -147,6 +158,8 @@ def make_offer():
 
     else:
         print("You can't do that, You don't have the cards")
+        sender("no", mq)
+        return None
 
 
 def display_offers():
@@ -160,12 +173,26 @@ def display_offers():
 
 def accept_offer():
     offer_id = input(" -- Entrez l'identifiant de l'offre\n")
+
+    # ICI, FAUT bloquer si l'offre est déja en cours de négociation
+    sender(offer_id, mq)
+
+    go, _ = mq.receive(type=id_player + 2)
+    go = go.decode()
+    if go == "NOPE":
+        print("Too bad ! Someone is already bargaining on this offer !")
+        return None
+
     pattern_to_exchange = input(" -- Contre quel motif voulez vous échanger ?\n")
     offer_accepted = offer_id + " " + pattern_to_exchange
     sender(offer_accepted, mq)
 
     answer, _ = mq.receive(type=id_player + 2)
     answer = answer.decode()
+    if answer == "no":
+        print("Cette offre n'existe pas !\n")
+        return None
+
     offer_received = answer.split(" ")
     if int(offer_received[2]) != id_player and cards_check(pattern_to_exchange, int(offer_received[0])):
         block_cards(pattern_to_exchange, int(offer_received[0]))
@@ -192,86 +219,84 @@ def sender(str, mq):
     str = str.encode()
     mq.send(str, type=(id_player + 7))
 
+def play():
+    global mq, cards, playing
+    interaction = input(" -- Que voulez vous faire ? \n")
+
+    if interaction == "ring_bell" or interaction == "rb":
+        sender("ring_bell", mq)
+        if ring_bell():
+            sender("WON", mq)
+            print(color.RED + color.BOLD + "YOU WON" + color.END)
+            playing = False
+        else:
+            print("not yet, you need 5 identicals cards")
+            sender("NO", mq)
+
+    elif interaction == "display_cards" or interaction == "dc":
+        display_cards()
+
+    elif interaction == "make_offer" or interaction == "mo":
+        sender("make_offer", mq)
+        make_offer()
+
+    elif interaction == "accept_offer" or interaction == "ao":
+        sender("accept_offer", mq)
+        accept_offer()
+
+    elif interaction == "display_offers" or interaction == "do":
+        sender("display_offers", mq)
+        display_offers()
+
+    elif interaction == "help" or interaction == "h":
+        how_to()
+
+    elif interaction == "":
+        sender(interaction, mq)
+    else:
+        sender(interaction, mq)
+        print(" - > Wrong command ! Tap \033[92mhelp\033[0m\n")
+
 
 if __name__ == "__main__":
     while True:
         response, _ = connexions.receive(type=1)
         response = response.decode()
-        id_player = int(response)
-        if response == "no" or response == "The game is running":
-            test = False
-            break
-        else:
+        try:
+            id_player = int(response)
             test = True
+            break
+        except ValueError:
+            print(response)
+            test = False
             break
 
 
     if test == True:
-        while game:
-            print("Wainting for my cards")
+        print("-- -- -- -- -- -- -- --")
+        print("   N E W  G A M E !")
+        print("-- -- -- -- -- -- -- --")
 
-            key = 129
-            mq = sysv_ipc.MessageQueue(key)
+        print("\nWainting for my cards")
 
-            cardsDistributed, _ = mq.receive(type=id_player + 2)
-            cardsDistributed = cardsDistributed.decode()
-            listCards = cardsDistributed.split(";")
-            for c in listCards:
-                cards.append(card(c))
-            playing = True
+        key = 129
+        mq = sysv_ipc.MessageQueue(key)
 
-        # Il faut attendre que les threads joueurs se lancent
-        # Il faut recevoir playing
+        cardsDistributed, _ = mq.receive(type=id_player + 2)
+        cardsDistributed = cardsDistributed.decode()
+        listCards = cardsDistributed.split(";")
+        for c in listCards:
+            cards.append(card(c))
 
-            how_to()
+        how_to()
 
-        # tout le code suivant doit être executé while playing :
+        key_receiver = 130
+        mq_receiver = sysv_ipc.MessageQueue(key_receiver)
 
-            key_receiver = 130
+        message_receiver().start()
 
-            mq_receiver = sysv_ipc.MessageQueue(key_receiver)
-
-            receiver = threading.Thread(target=message_receiver, args=(id_player, mq_receiver))
-            receiver.start()
-
-            while playing:
-                print("ICI")
-                interaction = input(" -- Que voulez vous faire ? \n")
-
-                if interaction == "ring_bell":
-                    sender(interaction, mq)
-                    if ring_bell():
-                        sender("WON", mq)
-                        points += 1
-                        print(color.RED + color.BOLD + "YOU WON" + color.END)
-                        print(color.GREEN + "you have " + str(points) + "points" +color.END)
-                        break
-                    else:
-                        print("not yet, you need 5 identicals cards")
-                        sender("NO", mq)
-
-                elif interaction == "display_cards":
-                    display_cards()
-
-                elif interaction == "make_offer":
-                    sender(interaction, mq)
-                    make_offer()
-
-                elif interaction == "accept_offer":
-                    sender(interaction, mq)
-                    accept_offer()
-
-                elif interaction == "display_offers":
-                    sender(interaction, mq)
-                    display_offers()
-
-                elif interaction == "help":
-                    how_to()
-
-                elif interaction == "":
-                    print("", end="")
-
-                else:
-                    print(" - > Wrong command ! Tap \033[92mhelp\033[0m\n")
-        else:
-            print(" - > NO\n")
+        while playing:
+            play()
+    else:
+        print("")
+    sys.exit()
