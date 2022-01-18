@@ -45,6 +45,16 @@ class offre:
         )
 
 
+def getNumber():
+    while True:
+        print("How many games do you wan't to play ?")
+        try:
+            i = int(input())
+            if i > 0:
+                return i
+        except ValueError:
+            print("", end="")
+
 # con
 def connexion_receiver():
     global players, len_player
@@ -235,7 +245,9 @@ if __name__ == "__main__":
     os.system("ipcrm -Q 129")
     os.system("ipcrm -Q 130")
 
-    nb_games = int(input("WELCOME\nHow many games do you wan't to play ?"))
+    print("WELCOME")
+
+    nb_games = getNumber()
 
     connexions = sysv_ipc.MessageQueue(keyConnexions, sysv_ipc.IPC_CREAT)
     receiver = sysv_ipc.MessageQueue(keyReceiver, sysv_ipc.IPC_CREAT)
