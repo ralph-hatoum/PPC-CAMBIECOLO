@@ -47,7 +47,7 @@ class offre:
 
 def getNumber():
     while True:
-        print("How many games do you want to play ?")
+        print("How many games do you wan't to play ?")
         try:
             i = int(input())
             if i > 0:
@@ -82,7 +82,7 @@ def connexion_receiver():
             print("tentative")
 
 
-def player(id_player, offers_dict, offers_lock_dict, last_offer_id, len_player, last_offer_id_lock):
+def player(id_player, offers_dict, offers_lock_dict, last_offer_id, last_offer_id_lock):
 
     # Intéraction avec le joueur
 
@@ -94,10 +94,10 @@ def player(id_player, offers_dict, offers_lock_dict, last_offer_id, len_player, 
             time.sleep(10)
 
         if interaction == "ring_bell":
-            ring_bell(id_player, len_player)
+            ring_bell(id_player)
 
         if interaction == "make_offer":
-            make_offer(id_player, offers_dict, offers_lock_dict, last_offer_id, len_player, last_offer_id_lock)
+            make_offer(id_player, offers_dict, offers_lock_dict, last_offer_id, last_offer_id_lock)
 
         if interaction == "accept_offer":
             accept_offer(id_player, offers_dict, offers_lock_dict)
@@ -109,7 +109,7 @@ def player(id_player, offers_dict, offers_lock_dict, last_offer_id, len_player, 
             display_locks()
 
 
-def ring_bell(id_player, len_player):
+def ring_bell(id_player):
     global playing
     # On récupère la conclusion du joueur
     conclusion, _ = mq.receive(type=id_player + 7)
@@ -117,14 +117,7 @@ def ring_bell(id_player, len_player):
     if conclusion == "WON":
         playing_lock.acquire()
         playing = False
-        for i in range(len_player):
-            print(i)
-            message = "player "+ str(id_player) +" won"
-            message = message.encode()
-            receiver.send(message, type = i+2)
-        print("on a tout send")
-
-
+        # Sinon, on signale que le joueur n'a pas 5 cartes identiques, le jeu reprend
         playing_lock.release()
 
 
@@ -138,8 +131,7 @@ def display_locks():
     print(offers_locks)
 
 
-def make_offer(id_player, offers_dict, offers_lock_dict, last_offer_id, nbr_players, last_offer_id_lock):
-
+def make_offer(id_player, offers_dict, offers_lock_dict, last_offer_id, nbr_players):
     res, _ = mq.receive(type=id_player + 7)
     res = res.decode()
     offer = res.split(" ")
@@ -153,8 +145,8 @@ def make_offer(id_player, offers_dict, offers_lock_dict, last_offer_id, nbr_play
     offer_lock.acquire()
 
     # On crée un identifiant d'offre
-    with last_offer_id_lock:
-        last_offer_id[0] += 1
+    # with last_offer_id_lock:
+    last_offer_id[0] += 1
 
     id_offer = last_offer_id[0]
 
@@ -280,7 +272,7 @@ if __name__ == "__main__":
     cards = distrib_cartes(len_player)
 
     for i in range(len_player):
-        pl = Process(target=player, args=(i, offers, offers_locks, last_offer_id, len_player, last_offer_id_lock))
+        pl = Process(target=player, args=(i, offers, offers_locks, last_offer_id, len_player))
         players[i] = pl
         mq.send(cards[i], type=i + 2)
         pl.start()
