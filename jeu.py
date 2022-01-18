@@ -2,7 +2,7 @@ import random
 import threading
 import os
 import time
-from multiprocessing import Process, Manager, Lock
+from multiprocessing import Process, Manager, Lock, Value
 
 import sysv_ipc
 
@@ -14,8 +14,6 @@ connexion_time = True
 connexions = sysv_ipc.MessageQueue(keyConnexions, sysv_ipc.IPC_CREAT)
 receiver = sysv_ipc.MessageQueue(keyReceiver, sysv_ipc.IPC_CREAT)
 mq = sysv_ipc.MessageQueue(key, sysv_ipc.IPC_CREAT)
-
-last_offer_id = 0
 
 len_player = 0
 
@@ -38,14 +36,17 @@ class offre:
         self.motif = aMotif
 
     def __str__(self):
-        return "\033[36mOFFER_ID = " + str(self.id_offer) + "\033[0m for \033[91m\033[1m" + str(self.number_of_cards) \
-                + " cards\033[0m"
-
+        return (
+            "\033[36mOFFER_ID = "
+            + str(self.id_offer)
+            + "\033[0m for \033[91m\033[1m"
+            + str(self.number_of_cards)
+            + " cards\033[0m"
+        )
 
 
 # con
 def connexion_receiver():
-    print("OHOH")
     global players, len_player
     id_player = -1
     while True:
@@ -71,14 +72,13 @@ def connexion_receiver():
             print("tentative")
 
 
-def player(id_player, offers_dict, offers_lock_dict, nbr_players):
+def player(id_player, offers_dict, offers_lock_dict, last_offer_id, last_offer_id_lock):
 
     # Intéraction avec le joueur
-    print(id_player, "PLAYING")
+
     while playing:
         interaction, _ = mq.receive(type=(id_player + 7))
         interaction = interaction.decode()
-        print(interaction, "INTER")
 
         if interaction == "sleep":
             time.sleep(10)
@@ -87,7 +87,7 @@ def player(id_player, offers_dict, offers_lock_dict, nbr_players):
             ring_bell(id_player)
 
         if interaction == "make_offer":
-            make_offer(id_player, offers_dict, offers_lock_dict, last_offer_id, nbr_players)
+            make_offer(id_player, offers_dict, offers_lock_dict, last_offer_id, last_offer_id_lock)
 
         if interaction == "accept_offer":
             accept_offer(id_player, offers_dict, offers_lock_dict)
@@ -135,8 +135,10 @@ def make_offer(id_player, offers_dict, offers_lock_dict, last_offer_id, nbr_play
     offer_lock.acquire()
 
     # On crée un identifiant d'offre
-    #last_offer_id.value
-    id_offer = last_offer_id
+    # with last_offer_id_lock:
+    last_offer_id[0] += 1
+
+    id_offer = last_offer_id[0]
 
     # On creer une offre
     offer = offre(id_offer, id_player, number_of_cards, pattern)
@@ -148,6 +150,7 @@ def make_offer(id_player, offers_dict, offers_lock_dict, last_offer_id, nbr_play
     offers_lock_dict[id_offer] = Manager().Lock()
 
     # On imprime la liste des offres pour bien montrer au joueur que son offre est ajoutée
+    print()
     for i in range(nbr_players):
         display_offers(i + 2, receiver, offers_dict)
 
@@ -232,24 +235,32 @@ if __name__ == "__main__":
     os.system("ipcrm -Q 129")
     os.system("ipcrm -Q 130")
 
+    nb_games = int(input("WELCOME\nHow many games do you wan't to play ?"))
+
     connexions = sysv_ipc.MessageQueue(keyConnexions, sysv_ipc.IPC_CREAT)
     receiver = sysv_ipc.MessageQueue(keyReceiver, sysv_ipc.IPC_CREAT)
     mq = sysv_ipc.MessageQueue(key, sysv_ipc.IPC_CREAT)
 
     manager_offres = Manager()
     manager_offres_locks = Manager()
+
     offers = manager_offres.dict()
     offers_locks = manager_offres_locks.dict()
-    last_offer_id = Manager().Value(int, 0)
+
+    last_offer_id_lock = Lock()
+
+    last_offer_manager = Manager()
+    last_offer_id = last_offer_manager.list([0])
 
     conThread = threading.Thread(target=connexion_receiver)
     conThread.start()
-    time.sleep(7)
+    time.sleep(10)
     connexion_time = False
     print("FIN DES INSCRIPTIONS")
     cards = distrib_cartes(len_player)
+
     for i in range(len_player):
-        pl = Process(target=player, args=(i, offers, offers_locks, len_player))
+        pl = Process(target=player, args=(i, offers, offers_locks, last_offer_id, len_player))
         players[i] = pl
         mq.send(cards[i], type=i + 2)
         pl.start()

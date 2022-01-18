@@ -55,7 +55,7 @@ def cards_check(pattern, number_of_cards):
     # On vérifie d'abord que l'offre ne contient pas plus de 3 cartes (contrainte donnée dans le sujet)
     if number_of_cards > 3:
         print(" - > You can't do that, 3 cards maximum\n")
-
+        return False
         # Ensuite, on vérifie que le joueur a bien les cartes qu'il veut échanger
     else:
         k = 0
@@ -65,12 +65,20 @@ def cards_check(pattern, number_of_cards):
             if i.avaiable == True:
                 if i.motif == pattern:
                     k += 1
-                    if k <= number_of_cards:
-                        i.avaiable = False
 
         # On teste si le nombre de cartes offertes est inféreur ou égal au nombre de cartes du même motif
         #  présentes dans lejeu du joueur
         return number_of_cards <= k
+
+
+def block_cards(pattern, number_of_cards):
+    k = 0
+    for i in cards:
+        if i.avaiable == True:
+            if i.motif == pattern:
+                k += 1
+                if k <= number_of_cards:
+                    i.avaiable = False
 
 
 def switch_cards(pattern_to_drop, pattern_to_add, number_of_cards):
@@ -79,7 +87,7 @@ def switch_cards(pattern_to_drop, pattern_to_add, number_of_cards):
         if i < number_of_cards :
             if c.motif == pattern_to_drop and not(c.avaiable):
                 cards.remove(c)
-                cards.append(card(pattern_to_add))
+                cards.insert(0, card(pattern_to_add))
                 i += 1
         else:
             break
@@ -87,28 +95,28 @@ def switch_cards(pattern_to_drop, pattern_to_add, number_of_cards):
 
 def message_receiver(id, mq):
     while True:
-        print("mr")
         message, _ = mq.receive(type=id + 2)
         message = message.decode()
-        print("mr recoit", message)
         if message.startswith("\033[36mOFF"):
             print("\n -- -- -- \033[93mOFFERS\033[0m -- -- --")
             print(message)
             print("-- -- -- \033[93mEND OFFERS\033[0m -- -- --\n")
         else:
             deal = message.split(" ")
-            print(color.RED + "DEAL !\nYOU GAVE " + color.YELLOW + str(deal[2]) + " " + deal[0] +
+            print(color.RED + "DEAL (someone accepted your offer) !\nYOU GAVE "
+                  + color.YELLOW + str(deal[2]) + " " + deal[0] +
                   "\n" + color.END + color.BLUE +
                   "YOU RECEIVED " + color.DARKCYAN + str(deal[2]) + " " + deal[1] + "\n" + color.END)
             switch_cards(deal[0], deal[1], int(deal[2]))
 
 
 def display_cards():
+    print(color.BOLD, end="")
     for c in cards:
         if c.avaiable == True:
             print("\033[92m" + c.__str__(), end=",")
         else:
-            print("\033[91m\033[1m" + c.__str__(), end=",")
+            print("\033[91m" + c.__str__(), end=",")
     print("\033[0m\n")
 
 
@@ -120,6 +128,7 @@ def make_offer():
     pattern = offer[1]
 
     if cards_check(pattern, number_of_cards):
+        block_cards(pattern, number_of_cards)
         sender(interaction, mq)
         answer, _ = mq.receive(type=id_player + 2)
         answer = answer.decode()
@@ -148,6 +157,7 @@ def accept_offer():
     answer = answer.decode()
     offer_received = answer.split(" ")
     if int(offer_received[2]) != id_player and cards_check(pattern_to_exchange, int(offer_received[0])):
+        block_cards(pattern_to_exchange, int(offer_received[0]))
         sender(pattern_to_exchange, mq)
         print(color.RED + "DEAL !\nYOU GAVE " + color.YELLOW + str(offer_received[0]) + " " + pattern_to_exchange +
               "\n" + color.END + color.BLUE +
