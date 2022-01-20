@@ -223,7 +223,7 @@ def accept_offer(id_player, offers_dict, is_available_dic):
         offer = offers_dict[offer_id]
     except KeyError:
         mes = "no"
-        is_available_dic[offer_id] = False
+        is_available_dic[offer_id] = True
         mes = mes.encode()
         mq.send(mes, type=id_player + 2)
         return None
@@ -237,6 +237,7 @@ def accept_offer(id_player, offers_dict, is_available_dic):
     conclusion, _ = mq.receive(type=id_player + 7)
     conclusion = conclusion.decode()
     if conclusion == "NO_DEAL":
+        is_available_dic[offer_id] = True
         return None
     else:
         # On previens le joueur qui a fait l'offre du deal par message spontanee
